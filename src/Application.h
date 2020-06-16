@@ -33,9 +33,11 @@ private:
 	void CleanUp();
 
 	void InitWindow();
+	void CreateInstance();
 private:
 	static Application* sInstance;
 private:
 	GLFWwindow* mWindow;
+	VkInstance mVulkanInstance;
 	const uint32_t mWidth, mHeight;
 };
