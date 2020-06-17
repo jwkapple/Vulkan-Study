@@ -2,6 +2,7 @@
 #include <iostream>	
 #include <stdexcept>
 #include <cstdlib>
+#include <vector>
 
 #include "Application.h"
 
@@ -11,6 +12,18 @@ Application::Application()
 	: mWidth(800), mHeight(600)
 {
 	sInstance = this;
+
+	validationLayers = 
+	{
+		"VK_LAYER_KHRONOS_vaildation"
+	};
+
+#ifndef NDEBUG
+	enableValidationLayer = false;
+#else
+	enableValidationLayer = true;
+#endif // !NDEBUG
+
 }
 
 Application::~Application()
@@ -58,6 +71,10 @@ void Application::InitWindow()
 
 void Application::CreateInstance()
 {
+	if (enableValidationLayer && !CheckValidationLayerSupport())
+	{
+		throw std::runtime_error("vaildation layers requested, but not available!");
+	}
 	// Intiailize Applicatoin Info (Optional)
 	VkApplicationInfo appInfo{};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -78,11 +95,23 @@ void Application::CreateInstance()
 	createInfo.pApplicationInfo = &appInfo;
 	createInfo.enabledExtensionCount = glfwExtensionCount;
 	createInfo.ppEnabledExtensionNames = glfwExtensions;
-	createInfo.enabledLayerCount = 0;
+	createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+	createInfo.ppEnabledLayerNames = validationLayers.data();
 
 	// Create Instance
 	if (vkCreateInstance(&createInfo, nullptr, &mVulkanInstance) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create Instance!");
 	}
+}
+
+bool Application::CheckValidationLayerSupport()
+{
+	uint32_t layerCount;
+	vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+	std::vector<VkLayerProperties> availableLayers(layerCount);
+	vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+	
+	return false;
 }

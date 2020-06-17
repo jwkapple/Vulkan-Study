@@ -34,10 +34,13 @@ private:
 
 	void InitWindow();
 	void CreateInstance();
+	bool CheckValidationLayerSupport();
 private:
 	static Application* sInstance;
 private:
 	GLFWwindow* mWindow;
 	VkInstance mVulkanInstance;
 	const uint32_t mWidth, mHeight;
+	bool enableValidationLayer;
+	std::vector<const char*> validationLayers;
 };
