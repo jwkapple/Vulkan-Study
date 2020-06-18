@@ -9,6 +9,7 @@
 #include <glm/mat4x4.hpp>
 
 #include <vulkan/vulkan.h>
+#include <vector>
 
 class Application
 {
@@ -35,11 +36,31 @@ private:
 	void InitWindow();
 	void CreateInstance();
 	bool CheckValidationLayerSupport();
+	std::vector<const char*> GetRequiredExtensions();
+	void SetupDebugMessenger();
+	void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
+	VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerCreateInfoEXT*
+		pCreateInfo, VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
+	void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT DebugMessenger
+		, VkAllocationCallbacks* pAllocator);
+	
+	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback
+	(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+		VkDebugUtilsMessageTypeFlagBitsEXT messageType,
+		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+		void* pUserData)
+	{
+		std::cerr << "vaildation layer : " << pCallbackData->pMessage << std::endl;
+		
+		return VK_FALSE;
+	}
+
 private:
 	static Application* sInstance;
 private:
 	GLFWwindow* mWindow;
 	VkInstance mVulkanInstance;
+	VkDebugUtilsMessengerEXT mDebugMessenger;
 	const uint32_t mWidth, mHeight;
 	bool enableValidationLayer;
 	std::vector<const char*> validationLayers;
