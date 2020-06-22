@@ -8,8 +8,7 @@ int main()
 {
 	Application* app = Application::Create();
 
-	app->Run();
-/*	try
+try
 	{
 		app->Run();
 	}
@@ -18,6 +17,6 @@ int main()
 		std::cerr << e.what() << std::endl;
 		return EXIT_FAILURE;
 	}
-	*/
+
 	return EXIT_SUCCESS;
 }
