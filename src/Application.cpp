@@ -53,7 +53,7 @@ void Application::CleanUp()
 {
 	if (enableValidationLayer)
 	{
-		//DestroyDebugUtilsMessengerEXT(mVulkanInstance, mDebugMessenger, nullptr);
+		DestroyDebugUtilsMessengerEXT(mVulkanInstance, mDebugMessenger, nullptr);
 	}
 
 	vkDestroyInstance(mVulkanInstance, nullptr);
@@ -94,21 +94,6 @@ void Application::CreateInstance()
 	VkInstanceCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	createInfo.pApplicationInfo = &appInfo;
-
-
-	uint32_t extensionCount = 0;
-	vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-
-	std::vector<VkExtensionProperties> extension(extensionCount);
-
-
-	vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extension.data());
-	
-	std::cout << "available extensions:\n";
-
-	for (const auto& extension : extension) {
-		std::cout << '\t' << extension.extensionName << '\n';
-	}
 	
 	auto extensions = GetRequiredExtensions();
 	createInfo.enabledLayerCount = 0;
@@ -123,7 +108,7 @@ void Application::CreateInstance()
 		createInfo.ppEnabledLayerNames = validationLayers.data();
 
 		PopulateDebugMessengerCreateInfo(debugCreateInfo);
-		createInfo.pNext = &debugCreateInfo;
+		createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
 	}
 	else
 	{
@@ -190,11 +175,11 @@ std::vector<const char*> Application::GetRequiredExtensions()
 
 void Application::SetupDebugMessenger()
 {
+	if (!enableValidationLayer) return;
 
 	VkDebugUtilsMessengerCreateInfoEXT createInfo;
 	PopulateDebugMessengerCreateInfo(createInfo);
-
-	VkResult bol = CreateDebugUtilsMessengerEXT(mVulkanInstance, &createInfo, nullptr, &mDebugMessenger);
+	
 	if (CreateDebugUtilsMessengerEXT(mVulkanInstance, &createInfo, nullptr, &mDebugMessenger) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to setup debug messenger!");
@@ -215,7 +200,7 @@ VkResult Application::CreateDebugUtilsMessengerEXT(VkInstance instance, const Vk
 {
 	auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance,
 		"vkCreateDebugUtilsMessengerEXT");
-	if (func == nullptr)
+	if (func != nullptr)
 	{
 		return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
 	}
@@ -228,7 +213,7 @@ VkResult Application::CreateDebugUtilsMessengerEXT(VkInstance instance, const Vk
 void Application::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator)
 {
 	auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-	if (func == nullptr)
+	if (func != nullptr)
 	{
 		func(instance, debugMessenger, pAllocator);
 	}
