@@ -8,8 +8,21 @@
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
 
+#include <optional>
+
 #include <vulkan/vulkan.h>
 #include <vector>
+
+
+struct QueueFamilyIndices
+{
+	uint32_t GraphicsFamily;
+
+	bool isComplete()
+	{
+		return (GraphicsFamily == 0);
+	}
+};
 
 class Application
 {
@@ -35,16 +48,19 @@ private:
 
 	void InitWindow();
 	void CreateInstance();
+
+	void SetupDebugMessenger();
+	void PickPhysicalDevice();
+
+#pragma region DebugMessenger
 	bool CheckValidationLayerSupport();
 	std::vector<const char*> GetRequiredExtensions();
-	void SetupDebugMessenger();
 	void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 	VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT*
 		pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
 	void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT DebugMessenger
 		, const VkAllocationCallbacks* pAllocator);
 	// PFN_vkDebugUtilsMessengerCallbackEXT
-
 	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 		VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -55,12 +71,20 @@ private:
 
 		return VK_FALSE;
 	}
+#pragma endregion
+
+#pragma region PhysicalDevice
+	bool isDeviceSuitable(VkPhysicalDevice device);
+	QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
+#pragma endregion
+
 private:
 	static Application* sInstance;
 private:
 	GLFWwindow* mWindow;
 	VkInstance mVulkanInstance;
 	VkDebugUtilsMessengerEXT mDebugMessenger;
+	VkPhysicalDevice mPhysicalDevice;
 	const uint32_t mWidth, mHeight;
 	bool enableValidationLayer;
 	std::vector<const char*> validationLayers;

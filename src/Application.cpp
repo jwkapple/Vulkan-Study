@@ -10,7 +10,7 @@ Application* Application::sInstance = nullptr;
 
 
 Application::Application()
-	: mWidth(800), mHeight(600)
+	: mWidth(800), mHeight(600), enableValidationLayer(true), mPhysicalDevice(VK_NULL_HANDLE)
 {
 	sInstance = this;
 
@@ -18,9 +18,6 @@ Application::Application()
 	{
 		"VK_LAYER_KHRONOS_validation"
 	};
-	
-	enableValidationLayer = true;
-
 }
 
 Application::~Application()
@@ -39,6 +36,7 @@ void Application::InitVulkan()
 {
 	CreateInstance();
 	SetupDebugMessenger();
+	PickPhysicalDevice();
 }
 
 void Application::MainLoop()
@@ -127,6 +125,45 @@ void Application::CreateInstance()
 
 }
 
+void Application::SetupDebugMessenger()
+{
+	if (!enableValidationLayer) return;
+
+	VkDebugUtilsMessengerCreateInfoEXT createInfo;
+	PopulateDebugMessengerCreateInfo(createInfo);
+
+	if (CreateDebugUtilsMessengerEXT(mVulkanInstance, &createInfo, nullptr, &mDebugMessenger) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to setup debug messenger!");
+	}
+}
+
+void Application::PickPhysicalDevice()
+{
+	uint32_t deviceCount = 0;
+	vkEnumeratePhysicalDevices(mVulkanInstance, &deviceCount, nullptr);
+
+	if (deviceCount == 0) throw std::runtime_error("Failed to find GPUs with Vulkan support!");
+
+	std::vector<VkPhysicalDevice> devices(deviceCount);
+	vkEnumeratePhysicalDevices(mVulkanInstance, &deviceCount, devices.data());
+
+	for (const auto& device : devices)
+	{
+		if (isDeviceSuitable(device))
+		{
+			mPhysicalDevice = device;
+			break;
+		}
+	}
+
+	if (mPhysicalDevice == VK_NULL_HANDLE)
+	{
+		throw std::runtime_error("Failed to find a suitable GPU");
+	}
+}
+
+#pragma region DebugMessenger
 bool Application::CheckValidationLayerSupport()
 {
 	uint32_t layerCount;
@@ -134,7 +171,7 @@ bool Application::CheckValidationLayerSupport()
 
 	std::vector<VkLayerProperties> availableLayers(layerCount);
 	vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
-	
+
 	for (const char* layerName : validationLayers)
 	{
 		bool layerFound = false;
@@ -153,7 +190,7 @@ bool Application::CheckValidationLayerSupport()
 			return false;
 		}
 	}
-	
+
 	return true;
 }
 
@@ -173,19 +210,6 @@ std::vector<const char*> Application::GetRequiredExtensions()
 	return extensions;
 }
 
-void Application::SetupDebugMessenger()
-{
-	if (!enableValidationLayer) return;
-
-	VkDebugUtilsMessengerCreateInfoEXT createInfo;
-	PopulateDebugMessengerCreateInfo(createInfo);
-	
-	if (CreateDebugUtilsMessengerEXT(mVulkanInstance, &createInfo, nullptr, &mDebugMessenger) != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to setup debug messenger!");
-	}
-}
-
 void Application::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT & createInfo)
 {
 	createInfo = {};
@@ -198,7 +222,7 @@ void Application::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateIn
 VkResult Application::CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo
 	, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger)
 {
-	auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance,
+	auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance,
 		"vkCreateDebugUtilsMessengerEXT");
 	if (func != nullptr)
 	{
@@ -218,3 +242,47 @@ void Application::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtil
 		func(instance, debugMessenger, pAllocator);
 	}
 }
+
+#pragma endregion
+
+#pragma region PhysicalDevice
+bool Application::isDeviceSuitable(VkPhysicalDevice device)  // Remain to return true for comtemporary
+{
+	VkPhysicalDeviceProperties deviceProperties;
+	vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
+	// Check Optional Features
+	VkPhysicalDeviceFeatures deviceFeatures;
+	vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+
+	QueueFamilyIndices indices = FindQueueFamilies(device);
+
+	return indices.isComplete();
+}
+QueueFamilyIndices Application::FindQueueFamilies(VkPhysicalDevice device)
+{
+	QueueFamilyIndices indices;
+
+	uint32_t queueFamilyCount = 0;
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+	std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+
+	// Find at least one queue family supporting VK_QUEUE_GRAPHICS_BIT
+	int i = 0;
+	for (const auto& queueFamily : queueFamilies)
+	{
+		if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+		{
+			indices.GraphicsFamily = i;
+		}
+
+		if (indices.isComplete()) break;
+
+		i++;
+	}
+
+	return indices;
+}
+#pragma endregion
