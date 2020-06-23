@@ -38,7 +38,7 @@ void Application::Run()
 void Application::InitVulkan()
 {
 	CreateInstance();
-	//SetupDebugMessenger();
+	SetupDebugMessenger();
 }
 
 void Application::MainLoop()
@@ -53,7 +53,7 @@ void Application::CleanUp()
 {
 	if (enableValidationLayer)
 	{
-		DestroyDebugUtilsMessengerEXT(mVulkanInstance, mDebugMessenger, nullptr);
+		//DestroyDebugUtilsMessengerEXT(mVulkanInstance, mDebugMessenger, nullptr);
 	}
 
 	vkDestroyInstance(mVulkanInstance, nullptr);
@@ -194,6 +194,7 @@ void Application::SetupDebugMessenger()
 	VkDebugUtilsMessengerCreateInfoEXT createInfo;
 	PopulateDebugMessengerCreateInfo(createInfo);
 
+	VkResult bol = CreateDebugUtilsMessengerEXT(mVulkanInstance, &createInfo, nullptr, &mDebugMessenger);
 	if (CreateDebugUtilsMessengerEXT(mVulkanInstance, &createInfo, nullptr, &mDebugMessenger) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to setup debug messenger!");
