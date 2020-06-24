@@ -37,6 +37,7 @@ void Application::InitVulkan()
 	CreateInstance();
 	SetupDebugMessenger();
 	PickPhysicalDevice();
+	CreateLogicalDevice();
 }
 
 void Application::MainLoop()
@@ -55,6 +56,7 @@ void Application::CleanUp()
 	}
 
 	vkDestroyInstance(mVulkanInstance, nullptr);
+	vkDestroyDevice(mDevice, nullptr);
 
 	glfwDestroyWindow(mWindow);
 
@@ -161,6 +163,51 @@ void Application::PickPhysicalDevice()
 	{
 		throw std::runtime_error("Failed to find a suitable GPU");
 	}
+}
+
+void Application::CreateLogicalDevice()
+{
+	QueueFamilyIndices indices = FindQueueFamilies(mPhysicalDevice);
+
+	VkDeviceQueueCreateInfo queueCreateInfo{};
+
+	queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+	queueCreateInfo.queueFamilyIndex = indices.GraphicsFamily;
+	queueCreateInfo.queueCount = 1;
+
+	float queuePriority = 1.0f;
+	queueCreateInfo.pQueuePriorities = &queuePriority;
+
+	VkPhysicalDeviceFeatures deviceFeatures{};
+
+	VkDeviceCreateInfo createInfo{};
+
+	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	createInfo.pQueueCreateInfos = &queueCreateInfo;
+	createInfo.queueCreateInfoCount = 1;
+
+	createInfo.pEnabledFeatures = &deviceFeatures;
+
+	createInfo.enabledExtensionCount = 0;
+
+	if (enableValidationLayer)
+	{
+		createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+		createInfo.ppEnabledLayerNames = validationLayers.data();
+	}
+	else
+	{
+		createInfo.enabledLayerCount = 0;
+	}
+
+	VkResult bol = vkCreateDevice(mPhysicalDevice, &createInfo, nullptr, &mDevice);
+	if (vkCreateDevice(mPhysicalDevice, &createInfo, nullptr, &mDevice) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create logical device!");
+	}
+
+	vkGetDeviceQueue(mDevice, indices.GraphicsFamily, 0, &mGraphicsQueue);
+
 }
 
 #pragma region DebugMessenger

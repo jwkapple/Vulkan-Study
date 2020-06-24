@@ -22,6 +22,8 @@ struct QueueFamilyIndices
 	{
 		return (GraphicsFamily == 0);
 	}
+
+	QueueFamilyIndices() : GraphicsFamily(121312) {}
 };
 
 class Application
@@ -37,9 +39,12 @@ public:
 		if (sInstance == nullptr)
 		{
 			sInstance = new Application();
-			std::cerr << "Application instance already exist" << std::endl;
+			std::cerr << "Application Created!" << std::endl;
+			return sInstance;
 		}
-		return sInstance;
+
+		std::cerr << "Application instance already exist" << std::endl;
+		return nullptr;
 	}
 private:
 	void InitVulkan();
@@ -51,6 +56,7 @@ private:
 
 	void SetupDebugMessenger();
 	void PickPhysicalDevice();
+	void CreateLogicalDevice();
 
 #pragma region DebugMessenger
 	bool CheckValidationLayerSupport();
@@ -73,7 +79,7 @@ private:
 	}
 #pragma endregion
 
-#pragma region PhysicalDevice
+#pragma region PhysicalDevice & Device
 	bool isDeviceSuitable(VkPhysicalDevice device);
 	QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
 #pragma endregion
@@ -85,6 +91,8 @@ private:
 	VkInstance mVulkanInstance;
 	VkDebugUtilsMessengerEXT mDebugMessenger;
 	VkPhysicalDevice mPhysicalDevice;
+	VkDevice mDevice;
+	VkQueue mGraphicsQueue;
 	const uint32_t mWidth, mHeight;
 	bool enableValidationLayer;
 	std::vector<const char*> validationLayers;
