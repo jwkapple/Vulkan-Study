@@ -28,6 +28,13 @@ struct QueueFamilyIndices
 	QueueFamilyIndices() : GraphicsFamily(121312), PresentFamily(121312) {}
 };
 
+struct SwapChainSupportDetails
+{
+	VkSurfaceCapabilitiesKHR capabilities;
+	std::vector<VkSurfaceFormatKHR> formats;
+	std::vector<VkPresentModeKHR> presentModes;
+};
+
 class Application
 {
 public:
@@ -60,6 +67,7 @@ private:
 	void CreateSurface();
 	void PickPhysicalDevice();
 	void CreateLogicalDevice();
+	void CreateSwapChain();
 
 #pragma region DebugMessenger
 	bool CheckValidationLayerSupport();
@@ -86,6 +94,8 @@ private:
 	bool isDeviceSuitable(VkPhysicalDevice device);
 	QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
 #pragma endregion
+	bool CheckDeviceExtensionSupport(VkPhysicalDevice device);
+	SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device);
 
 private:
 	static Application* sInstance;
@@ -95,10 +105,12 @@ private:
 	VkDebugUtilsMessengerEXT mDebugMessenger;
 	VkPhysicalDevice mPhysicalDevice;
 	VkDevice mDevice;
+	VkSurfaceKHR mSurface;
+	VkSwapchainKHR mSwapChain;
 	VkQueue mGraphicsQueue;
 	VkQueue mPresentQueue;
-	VkSurfaceKHR mSurface;
 	const uint32_t mWidth, mHeight;
 	bool enableValidationLayer;
 	std::vector<const char*> validationLayers;
+	std::vector<const char*> deviceExtensions;
 };

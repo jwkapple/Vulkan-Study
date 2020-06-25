@@ -18,6 +18,11 @@ Application::Application()
 	{
 		"VK_LAYER_KHRONOS_validation"
 	};
+
+	deviceExtensions =
+	{
+		VK_KHR_SWAPCHAIN_EXTENSION_NAME
+	};
 }
 
 Application::~Application()
@@ -39,6 +44,7 @@ void Application::InitVulkan()
 	CreateSurface();
 	PickPhysicalDevice();
 	CreateLogicalDevice();
+	CreateSwapChain();
 }
 
 void Application::MainLoop()
@@ -58,6 +64,7 @@ void Application::CleanUp()
 
 	vkDestroySurfaceKHR(mVulkanInstance, mSurface, nullptr);
 	vkDestroyInstance(mVulkanInstance, nullptr);
+	vkDestroySwapchainKHR(mDevice, mSwapChain, nullptr);
 	vkDestroyDevice(mDevice, nullptr);
 
 	glfwDestroyWindow(mWindow);
@@ -205,7 +212,8 @@ void Application::CreateLogicalDevice()
 
 	createInfo.pEnabledFeatures = &deviceFeatures;
 
-	createInfo.enabledExtensionCount = 0;
+	createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
+	createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
 	if (enableValidationLayer)
 	{
@@ -227,6 +235,21 @@ void Application::CreateLogicalDevice()
 
 	vkGetDeviceQueue(mDevice, indices.GraphicsFamily, 0, &mGraphicsQueue);
 	vkGetDeviceQueue(mDevice, indices.PresentFamily, 0, &mPresentQueue);
+}
+
+void Application::CreateSwapChain()
+{
+
+	VkSwapchainCreateInfoKHR createInfo;
+
+	createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+	createInfo.surface = mSurface;
+
+
+	if (vkCreateSwapchainKHR(mDevice, &createInfo, nullptr, &mSwapChain) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create swap chain!");
+	}
 }
 
 #pragma region DebugMessenger
@@ -323,8 +346,11 @@ bool Application::isDeviceSuitable(VkPhysicalDevice device)  // Remain to return
 
 	QueueFamilyIndices indices = FindQueueFamilies(device);
 
-	return indices.isComplete();
+	bool extensionSupported = CheckDeviceExtensionSupport(device);
+
+	return indices.isComplete() && extensionSupported;
 }
+
 QueueFamilyIndices Application::FindQueueFamilies(VkPhysicalDevice device)
 {
 	QueueFamilyIndices indices;
@@ -359,5 +385,50 @@ QueueFamilyIndices Application::FindQueueFamilies(VkPhysicalDevice device)
 	}
 
 	return indices;
+}
+bool Application::CheckDeviceExtensionSupport(VkPhysicalDevice device)
+{
+	uint32_t extensionCount;
+	vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+
+	std::vector<VkExtensionProperties> avaiableExtensions(extensionCount);
+	vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, avaiableExtensions.data());
+
+	for (const auto* extensionName : deviceExtensions)
+	{
+		bool extensionFound = false;
+
+		for (const auto& extenstionProperty : avaiableExtensions)
+		{
+			if (std::strcmp(extensionName, extenstionProperty.extensionName))
+			{
+				extensionFound = true;
+				break;
+			}
+		}
+
+		if (!extensionFound) return false;
+	}
+	return true;
+}
+SwapChainSupportDetails Application::QuerySwapChainSupport(VkPhysicalDevice device)
+{
+	SwapChainSupportDetails details;
+
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, mSurface, &details.capabilities);
+
+	uint32_t formatCount;
+	vkGetPhysicalDeviceSurfaceFormatsKHR(device, mSurface, &formatCount, nullptr);
+
+	details.formats.resize(formatCount);
+	vkGetPhysicalDeviceSurfaceFormatsKHR(device, mSurface, &formatCount, details.formats.data());
+
+	uint32_t presentModeCount;
+	vkGetPhysicalDeviceSurfacePresentModesKHR(device, mSurface, &presentModeCount, nullptr);
+
+	details.presentModes.resize(presentModeCount);
+	vkGetPhysicalDeviceSurfacePresentModesKHR(device, mSurface, &presentModeCount, details.presentModes.data());
+
+	return details;
 }
 #pragma endregion
