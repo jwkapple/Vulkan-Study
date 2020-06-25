@@ -12,18 +12,20 @@
 
 #include <vulkan/vulkan.h>
 #include <vector>
+#include <set>
 
 
 struct QueueFamilyIndices
 {
 	uint32_t GraphicsFamily;
+	uint32_t PresentFamily;
 
 	bool isComplete()
 	{
-		return (GraphicsFamily == 0);
+		return (GraphicsFamily == 0 && PresentFamily == 0);
 	}
 
-	QueueFamilyIndices() : GraphicsFamily(121312) {}
+	QueueFamilyIndices() : GraphicsFamily(121312), PresentFamily(121312) {}
 };
 
 class Application
@@ -55,6 +57,7 @@ private:
 	void CreateInstance();
 
 	void SetupDebugMessenger();
+	void CreateSurface();
 	void PickPhysicalDevice();
 	void CreateLogicalDevice();
 
@@ -93,6 +96,8 @@ private:
 	VkPhysicalDevice mPhysicalDevice;
 	VkDevice mDevice;
 	VkQueue mGraphicsQueue;
+	VkQueue mPresentQueue;
+	VkSurfaceKHR mSurface;
 	const uint32_t mWidth, mHeight;
 	bool enableValidationLayer;
 	std::vector<const char*> validationLayers;
