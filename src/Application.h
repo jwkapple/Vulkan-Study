@@ -13,6 +13,8 @@
 #include <vulkan/vulkan.h>
 #include <vector>
 #include <set>
+#include <cstdint>
+#include <algorithm>
 
 
 struct QueueFamilyIndices
@@ -95,8 +97,14 @@ private:
 	QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
 #pragma endregion
 	bool CheckDeviceExtensionSupport(VkPhysicalDevice device);
-	SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device);
 
+#pragma region Swap chain
+	SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device);
+	VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+	VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
+	VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+
+#pragma endregion
 private:
 	static Application* sInstance;
 private:

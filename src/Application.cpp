@@ -239,12 +239,51 @@ void Application::CreateLogicalDevice()
 
 void Application::CreateSwapChain()
 {
+	SwapChainSupportDetails details = QuerySwapChainSupport(mPhysicalDevice);
 
-	VkSwapchainCreateInfoKHR createInfo;
+	VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(details.formats);
+	VkPresentModeKHR presentMode = ChooseSwapPresentMode(details.presentModes);
+	VkExtent2D imageExtent = ChooseSwapExtent(details.capabilities);
+
+	uint32_t imageCount = details.capabilities.minImageCount + 1;
+	if (details.capabilities.maxImageCount > 0 && imageCount > details.capabilities.maxImageCount)
+	{
+		imageCount = details.capabilities.maxImageCount;
+	}
+
+	VkSwapchainCreateInfoKHR createInfo{};
 
 	createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
 	createInfo.surface = mSurface;
+	createInfo.imageColorSpace = surfaceFormat.colorSpace;
+	createInfo.imageFormat = surfaceFormat.format;
+	createInfo.imageExtent = imageExtent;
+	createInfo.minImageCount = imageCount;
+	createInfo.imageArrayLayers = 1;
+	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
+	QueueFamilyIndices indices = FindQueueFamilies(mPhysicalDevice);
+	uint32_t queueFamilyIndices[] = { indices.GraphicsFamily, indices.PresentFamily };
+	if (indices.GraphicsFamily != indices.PresentFamily)
+	{
+		createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+		createInfo.queueFamilyIndexCount = 2;
+		createInfo.pQueueFamilyIndices = queueFamilyIndices;
+	}
+	else
+	{
+		createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		createInfo.queueFamilyIndexCount = 0;
+		createInfo.pQueueFamilyIndices = nullptr;
+	}
+
+	createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+	createInfo.clipped = VK_TRUE;
+	
+	createInfo.presentMode = presentMode;
+	createInfo.preTransform = details.capabilities.currentTransform;
+
+	createInfo.oldSwapchain = VK_NULL_HANDLE;
 
 	if (vkCreateSwapchainKHR(mDevice, &createInfo, nullptr, &mSwapChain) != VK_SUCCESS)
 	{
@@ -348,7 +387,15 @@ bool Application::isDeviceSuitable(VkPhysicalDevice device)  // Remain to return
 
 	bool extensionSupported = CheckDeviceExtensionSupport(device);
 
-	return indices.isComplete() && extensionSupported;
+	bool swapChainAdequate = false;
+	if (extensionSupported)
+	{
+		// Device should be capable of at least format and present mode
+		SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(device);
+		swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
+	}
+
+	return indices.isComplete() && extensionSupported && swapChainAdequate;
 }
 
 QueueFamilyIndices Application::FindQueueFamilies(VkPhysicalDevice device)
@@ -411,6 +458,10 @@ bool Application::CheckDeviceExtensionSupport(VkPhysicalDevice device)
 	}
 	return true;
 }
+
+#pragma endregion
+
+#pragma region Swap Chain
 SwapChainSupportDetails Application::QuerySwapChainSupport(VkPhysicalDevice device)
 {
 	SwapChainSupportDetails details;
@@ -430,5 +481,47 @@ SwapChainSupportDetails Application::QuerySwapChainSupport(VkPhysicalDevice devi
 	vkGetPhysicalDeviceSurfacePresentModesKHR(device, mSurface, &presentModeCount, details.presentModes.data());
 
 	return details;
+}
+
+VkSurfaceFormatKHR Application::ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
+{
+	for (const auto& availableFormat : availableFormats)
+	{
+		if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+		{
+			return availableFormat;
+		}
+	}
+
+	return availableFormats[0];
+}
+
+VkPresentModeKHR Application::ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
+{
+	for (const auto& availablePresentMode : availablePresentModes)
+	{
+		if (availablePresentMode == VK_PRESENT_MODE_FIFO_KHR)
+		{
+			return availablePresentMode;
+		}
+	}
+
+	return availablePresentModes[0];
+}
+VkExtent2D Application::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR & capabilities)
+{
+	if (capabilities.currentExtent.width == UINT32_MAX)
+	{
+		return capabilities.currentExtent;
+	}
+	else
+	{
+		VkExtent2D actualExtent = { mWidth, mHeight };
+
+		actualExtent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, actualExtent.width));
+		actualExtent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, actualExtent.height));
+
+		return actualExtent;
+	}
 }
 #pragma endregion
