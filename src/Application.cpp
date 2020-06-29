@@ -46,6 +46,7 @@ void Application::InitVulkan()
 	CreateLogicalDevice();
 	CreateSwapChain();
 	CreateImageViews();
+	CreateGraphicsPipeline();
 }
 
 void Application::MainLoop()
@@ -70,6 +71,10 @@ void Application::CleanUp()
 	{
 		vkDestroyImageView(mDevice, imageView, nullptr);
 	}
+
+	vkDestroyShaderModule(mDevice, mShader.GetVertexShaderModule(), nullptr);
+	vkDestroyShaderModule(mDevice, mShader.GetFragShaderModule(), nullptr);
+
 	vkDestroyDevice(mDevice, nullptr);
 
 	glfwDestroyWindow(mWindow);
@@ -311,7 +316,7 @@ void Application::CreateImageViews()
 	for (uint32_t i = 0; i < mSwapChainImages.size(); i++)
 	{
 		VkImageViewCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
 		createInfo.image = mSwapChainImages[i];
 		createInfo.format = mSwapChainImageFormat;
@@ -321,7 +326,7 @@ void Application::CreateImageViews()
 		createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
 		createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
 
-		// Describes image's purpose & whick part of image to access
+		// Describes image's purpose & which part of image to access
 		createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		createInfo.subresourceRange.layerCount = 1;
 		createInfo.subresourceRange.levelCount = 1;
@@ -333,6 +338,26 @@ void Application::CreateImageViews()
 			throw std::runtime_error("Failed to create Image view : " + i);
 		}
 	}
+}
+
+void Application::CreateGraphicsPipeline()
+{
+	mShader.CreateShaderModule(mDevice, "../../src/vert.spv", "../../src/frag.spv");
+
+	// Create ShaderStage Info
+	VkPipelineShaderStageCreateInfo vertexShaderStageInfo{};
+	vertexShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	vertexShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+	vertexShaderStageInfo.module = mShader.GetVertexShaderModule();
+	vertexShaderStageInfo.pName = "main";
+
+	VkPipelineShaderStageCreateInfo fragmentShaderStageInfo{};
+	fragmentShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	fragmentShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+	fragmentShaderStageInfo.module = mShader.GetFragShaderModule();
+	fragmentShaderStageInfo.pName = "main";
+
+	VkPipelineShaderStageCreateInfo shaderStages[] = { vertexShaderStageInfo, fragmentShaderStageInfo };
 }
 
 #pragma region DebugMessenger

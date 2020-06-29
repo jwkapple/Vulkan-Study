@@ -8,13 +8,13 @@
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
 
-#include <optional>
-
 #include <vulkan/vulkan.h>
 #include <vector>
 #include <set>
 #include <cstdint>
 #include <algorithm>
+
+#include "Shader.h"
 
 
 struct QueueFamilyIndices
@@ -71,6 +71,7 @@ private:
 	void CreateLogicalDevice();
 	void CreateSwapChain();
 	void CreateImageViews();
+	void CreateGraphicsPipeline();
 
 #pragma region DebugMessenger
 	bool CheckValidationLayerSupport();
@@ -98,14 +99,18 @@ private:
 	QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
 #pragma endregion
 	bool CheckDeviceExtensionSupport(VkPhysicalDevice device);
-
 #pragma region Swap chain
 	SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device);
 	VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 	VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
 	VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
-
 #pragma endregion
+
+#pragma region Graphics Pipeline
+	
+#pragma endregion
+
+
 private:
 	static Application* sInstance;
 private:
@@ -118,6 +123,7 @@ private:
 	VkSwapchainKHR mSwapChain;
 	std::vector<VkImage> mSwapChainImages;
 	std::vector<VkImageView> mImageViews;
+	Shader mShader;
 	VkFormat mSwapChainImageFormat;
 	VkExtent2D mSwapChainImageExtent;
 	VkQueue mGraphicsQueue;
