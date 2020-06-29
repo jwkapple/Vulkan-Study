@@ -358,6 +358,50 @@ void Application::CreateGraphicsPipeline()
 	fragmentShaderStageInfo.pName = "main";
 
 	VkPipelineShaderStageCreateInfo shaderStages[] = { vertexShaderStageInfo, fragmentShaderStageInfo };
+
+	// Create Vertex Input Info
+	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	vertexInputInfo.vertexBindingDescriptionCount = 0;  // Set as 0 until vertex buffer chapter
+	vertexInputInfo.vertexAttributeDescriptionCount = 0;
+
+	// Create Input Assembly Info
+	VkPipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo{};
+	inputAssemblyCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+	inputAssemblyCreateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	inputAssemblyCreateInfo.primitiveRestartEnable = VK_FALSE;
+
+	// Create Viewport & Scissors Info
+	VkViewport viewPort{};
+	viewPort.x = 0.0f;
+	viewPort.y = 0.0f;
+	viewPort.height = (float)mSwapChainImageExtent.height;
+	viewPort.width = (float)mSwapChainImageExtent.width;
+	viewPort.maxDepth = 1.0f;
+	viewPort.minDepth = 0.0f;
+	
+	VkRect2D scissor{};
+	scissor.offset = { 0, 0 };
+	scissor.extent = mSwapChainImageExtent;
+
+	// Create viewport state Info to bind viewport & scissor
+	VkPipelineViewportStateCreateInfo viewportStateCreateInfo{};
+	viewportStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+	viewportStateCreateInfo.pScissors = &scissor;
+	viewportStateCreateInfo.pViewports = &viewPort;
+	viewportStateCreateInfo.scissorCount = 1;
+	viewportStateCreateInfo.viewportCount = 1;
+
+	// Create Rasterizer Info
+	VkPipelineRasterizationStateCreateInfo rasterizer{};
+	rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+	rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+	rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+	rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+	rasterizer.rasterizerDiscardEnable = VK_FALSE;
+	rasterizer.depthClampEnable = VK_FALSE;
+	rasterizer.lineWidth = 1.0f;
+	
 }
 
 #pragma region DebugMessenger
