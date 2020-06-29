@@ -45,6 +45,7 @@ void Application::InitVulkan()
 	PickPhysicalDevice();
 	CreateLogicalDevice();
 	CreateSwapChain();
+	CreateImageViews();
 }
 
 void Application::MainLoop()
@@ -65,10 +66,13 @@ void Application::CleanUp()
 	vkDestroySurfaceKHR(mVulkanInstance, mSurface, nullptr);
 	vkDestroyInstance(mVulkanInstance, nullptr);
 	vkDestroySwapchainKHR(mDevice, mSwapChain, nullptr);
+	for (auto imageView : mImageViews)
+	{
+		vkDestroyImageView(mDevice, imageView, nullptr);
+	}
 	vkDestroyDevice(mDevice, nullptr);
 
 	glfwDestroyWindow(mWindow);
-
 	glfwTerminate();
 }
 
@@ -225,16 +229,15 @@ void Application::CreateLogicalDevice()
 		createInfo.enabledLayerCount = 0;
 	}
 
-	if (vkCreateDevice(mPhysicalDevice, &createInfo, nullptr, &mDevice) != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to create logical device!");
-	}
+if (vkCreateDevice(mPhysicalDevice, &createInfo, nullptr, &mDevice) != VK_SUCCESS)
+{
+	throw std::runtime_error("Failed to create logical device!");
+}
 
 
-	// Create the Queues
-
-	vkGetDeviceQueue(mDevice, indices.GraphicsFamily, 0, &mGraphicsQueue);
-	vkGetDeviceQueue(mDevice, indices.PresentFamily, 0, &mPresentQueue);
+// Create the Queues
+vkGetDeviceQueue(mDevice, indices.GraphicsFamily, 0, &mGraphicsQueue);
+vkGetDeviceQueue(mDevice, indices.PresentFamily, 0, &mPresentQueue);
 }
 
 void Application::CreateSwapChain()
@@ -279,7 +282,7 @@ void Application::CreateSwapChain()
 
 	createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 	createInfo.clipped = VK_TRUE;
-	
+
 	createInfo.presentMode = presentMode;
 	createInfo.preTransform = details.capabilities.currentTransform;
 
@@ -288,6 +291,47 @@ void Application::CreateSwapChain()
 	if (vkCreateSwapchainKHR(mDevice, &createInfo, nullptr, &mSwapChain) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create swap chain!");
+	}
+
+	// Get Swap Chain Images
+	uint32_t swapChainImageCount;
+	vkGetSwapchainImagesKHR(mDevice, mSwapChain, &swapChainImageCount, nullptr);
+
+	mSwapChainImages.resize(imageCount);
+	vkGetSwapchainImagesKHR(mDevice, mSwapChain, &swapChainImageCount, mSwapChainImages.data());
+
+	mSwapChainImageFormat = surfaceFormat.format;
+	mSwapChainImageExtent = imageExtent;
+}
+
+void Application::CreateImageViews()
+{
+	mImageViews.resize(mSwapChainImages.size());
+
+	for (uint32_t i = 0; i < mSwapChainImages.size(); i++)
+	{
+		VkImageViewCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		createInfo.image = mSwapChainImages[i];
+		createInfo.format = mSwapChainImageFormat;
+
+		createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+		createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+		createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+		createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+		// Describes image's purpose & whick part of image to access
+		createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		createInfo.subresourceRange.layerCount = 1;
+		createInfo.subresourceRange.levelCount = 1;
+		createInfo.subresourceRange.baseMipLevel = 0;
+		createInfo.subresourceRange.baseArrayLayer = 0;
+
+		if (vkCreateImageView(mDevice, &createInfo, nullptr, &mImageViews[i]) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create Image view : " + i);
+		}
 	}
 }
 

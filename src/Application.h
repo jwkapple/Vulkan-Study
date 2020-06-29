@@ -70,6 +70,7 @@ private:
 	void PickPhysicalDevice();
 	void CreateLogicalDevice();
 	void CreateSwapChain();
+	void CreateImageViews();
 
 #pragma region DebugMessenger
 	bool CheckValidationLayerSupport();
@@ -115,6 +116,10 @@ private:
 	VkDevice mDevice;
 	VkSurfaceKHR mSurface;
 	VkSwapchainKHR mSwapChain;
+	std::vector<VkImage> mSwapChainImages;
+	std::vector<VkImageView> mImageViews;
+	VkFormat mSwapChainImageFormat;
+	VkExtent2D mSwapChainImageExtent;
 	VkQueue mGraphicsQueue;
 	VkQueue mPresentQueue;
 	const uint32_t mWidth, mHeight;
