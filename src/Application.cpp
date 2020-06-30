@@ -75,6 +75,8 @@ void Application::CleanUp()
 	vkDestroyShaderModule(mDevice, mShader.GetVertexShaderModule(), nullptr);
 	vkDestroyShaderModule(mDevice, mShader.GetFragShaderModule(), nullptr);
 
+	vkDestroyPipelineLayout(mDevice, mPipelineLayout, nullptr);
+
 	vkDestroyDevice(mDevice, nullptr);
 
 	glfwDestroyWindow(mWindow);
@@ -402,6 +404,45 @@ void Application::CreateGraphicsPipeline()
 	rasterizer.depthClampEnable = VK_FALSE;
 	rasterizer.lineWidth = 1.0f;
 	
+	// Create MultiSampling Info
+	VkPipelineMultisampleStateCreateInfo multisampling{};
+	multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+	multisampling.sampleShadingEnable = VK_FALSE;
+	multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
+	// Create ColorBlending Info
+	VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+	colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT
+		| VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	colorBlendAttachment.blendEnable = VK_FALSE;
+
+	VkPipelineColorBlendStateCreateInfo colorBlending{};
+	colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+	colorBlending.logicOpEnable = VK_FALSE;
+	colorBlending.attachmentCount = 1; // Total framebuffer count
+	colorBlending.pAttachments = &colorBlendAttachment; // Specify Per attached framebuffer
+
+	// Create Dynamic State
+	VkDynamicState dynamicStates[] =
+	{
+		VK_DYNAMIC_STATE_VIEWPORT,
+		VK_DYNAMIC_STATE_LINE_WIDTH
+	};
+
+	VkPipelineDynamicStateCreateInfo dynamicState{};
+	dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+	dynamicState.dynamicStateCount = 2;
+	dynamicState.pDynamicStates = dynamicStates;
+
+	// Create Pipeline Layout Info
+	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+
+	if (vkCreatePipelineLayout(mDevice, &pipelineLayoutInfo, nullptr, &mPipelineLayout) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create pipeline layout!");
+	}
+
 }
 
 #pragma region DebugMessenger

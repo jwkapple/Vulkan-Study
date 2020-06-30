@@ -124,6 +124,7 @@ private:
 	std::vector<VkImage> mSwapChainImages;
 	std::vector<VkImageView> mImageViews;
 	Shader mShader;
+	VkPipelineLayout mPipelineLayout;
 	VkFormat mSwapChainImageFormat;
 	VkExtent2D mSwapChainImageExtent;
 	VkQueue mGraphicsQueue;
