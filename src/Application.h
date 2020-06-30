@@ -71,6 +71,7 @@ private:
 	void CreateLogicalDevice();
 	void CreateSwapChain();
 	void CreateImageViews();
+	void CreateRenderPass();
 	void CreateGraphicsPipeline();
 
 #pragma region DebugMessenger
@@ -123,6 +124,7 @@ private:
 	VkSwapchainKHR mSwapChain;
 	std::vector<VkImage> mSwapChainImages;
 	std::vector<VkImageView> mImageViews;
+	VkRenderPass mRenderPass;
 	Shader mShader;
 	VkPipelineLayout mPipelineLayout;
 	VkFormat mSwapChainImageFormat;
