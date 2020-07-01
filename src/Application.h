@@ -73,6 +73,7 @@ private:
 	void CreateImageViews();
 	void CreateRenderPass();
 	void CreateGraphicsPipeline();
+	void CreateFramebuffers();
 
 #pragma region DebugMessenger
 	bool CheckValidationLayerSupport();
@@ -124,6 +125,7 @@ private:
 	VkSwapchainKHR mSwapChain;
 	std::vector<VkImage> mSwapChainImages;
 	std::vector<VkImageView> mImageViews;
+	std::vector<VkFramebuffer> mSwapChainFramebuffers;
 	VkRenderPass mRenderPass;
 	Shader mShader;
 	VkPipelineLayout mPipelineLayout;

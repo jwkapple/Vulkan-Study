@@ -77,6 +77,11 @@ void Application::CleanUp()
 	
 	vkDestroyRenderPass(mDevice, mRenderPass, nullptr);
 	vkDestroyPipelineLayout(mDevice, mPipelineLayout, nullptr);
+	
+	for (auto framebuffer : mSwapChainFramebuffers)
+	{
+		vkDestroyFramebuffer(mDevice, framebuffer, nullptr);
+	}
 
 	vkDestroyDevice(mDevice, nullptr);
 
@@ -376,7 +381,7 @@ void Application::CreateRenderPass()
 	if (vkCreateRenderPass(mDevice, &renderPassInfo, nullptr, &mRenderPass) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create render pass!");
-	}
+	}  
 }
 
 void Application::CreateGraphicsPipeline()
@@ -480,6 +485,33 @@ void Application::CreateGraphicsPipeline()
 		throw std::runtime_error("Failed to create pipeline layout!");
 	}
 
+}
+
+void Application::CreateFramebuffers()
+{
+	mSwapChainFramebuffers.resize(mSwapChainImages.size());
+
+	for (uint32_t i = 0; i < mSwapChainImages.size(); i++)
+	{
+		VkImageView attachments[] =
+		{
+			mSwapChainImages[i]
+		};
+
+		VkFramebufferCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		createInfo.attachmentCount = 1;
+		createInfo.pAttachments = attachments;
+		createInfo.height = mSwapChainImageExtent.height;
+		createInfo.width = mSwapChainImageExtent.width;
+		createInfo.layers = 1;
+		createInfo.renderPass = mRenderPass;
+		
+		if (vkCreateFramebuffer(mDevice, &createInfo, nullptr, &mSwapChainFramebuffers[i]) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create framebuffer!");
+		}
+	}
 }
 
 #pragma region DebugMessenger
