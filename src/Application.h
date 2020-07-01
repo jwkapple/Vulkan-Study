@@ -74,7 +74,8 @@ private:
 	void CreateRenderPass();
 	void CreateGraphicsPipeline();
 	void CreateFramebuffers();
-
+	void CreateCommandPool();
+	void CreateCommandBuffers();
 #pragma region DebugMessenger
 	bool CheckValidationLayerSupport();
 	std::vector<const char*> GetRequiredExtensions();
@@ -128,6 +129,8 @@ private:
 	std::vector<VkFramebuffer> mSwapChainFramebuffers;
 	VkRenderPass mRenderPass;
 	Shader mShader;
+	VkCommandPool mCommandPool;
+	std::vector<VkCommandBuffer> mCommandBuffers;
 	VkPipelineLayout mPipelineLayout;
 	VkFormat mSwapChainImageFormat;
 	VkExtent2D mSwapChainImageExtent;

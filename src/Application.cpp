@@ -82,7 +82,8 @@ void Application::CleanUp()
 	{
 		vkDestroyFramebuffer(mDevice, framebuffer, nullptr);
 	}
-
+	
+	vkDestroyCommandPool(mDevice, mCommandPool, nullptr);
 	vkDestroyDevice(mDevice, nullptr);
 
 	glfwDestroyWindow(mWindow);
@@ -511,6 +512,66 @@ void Application::CreateFramebuffers()
 		{
 			throw std::runtime_error("Failed to create framebuffer!");
 		}
+	}
+}
+
+void Application::CreateCommandPool()
+{
+	QueueFamilyIndices indices = FindQueueFamilies(mPhysicalDevice);
+	VkCommandPoolCreateInfo poolInfo{};
+	poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	poolInfo.queueFamilyIndex = indices.GraphicsFamily;
+	poolInfo.flags = 0;
+
+	if (vkCreateCommandPool(mDevice, &poolInfo, nullptr, &mCommandPool) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create command pool!");
+	}
+}
+
+void Application::CreateCommandBuffers()
+{
+	mCommandBuffers.resize(mSwapChainFramebuffers.size());
+
+	VkCommandBufferAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocInfo.commandPool = mCommandPool;
+	allocInfo.commandBufferCount = (uint32_t)mCommandBuffers.size();
+	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	
+	if (vkAllocateCommandBuffers(mDevice, &allocInfo, mCommandBuffers.data()) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to allocate frame buffers!");
+	}
+
+	for (uint32_t i = 0; i < mCommandBuffers.size(); i++)
+	{
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = 0;
+		beginInfo.pInheritanceInfo = nullptr;
+
+		// Being recording commands in command buffer
+		if (vkBeginCommandBuffer(mCommandBuffers[i], &beginInfo) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to beginning command buffer : " + i);
+		}
+
+		VkRenderPassBeginInfo renderPassInfo{};
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		renderPassInfo.framebuffer = mSwapChainFramebuffers[i];
+		renderPassInfo.renderPass = mRenderPass;
+		renderPassInfo.renderArea.offset = { 0, 0 };
+		renderPassInfo.renderArea.extent = mSwapChainImageExtent;
+		
+		VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };  // Why not VkClearColorValue ?
+		renderPassInfo.clearValueCount = 1;
+		renderPassInfo.pClearValues = &clearColor;
+
+		// Begin Render Pass
+		vkCmdBeginRenderPass(mCommandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE); 
+
+		vkCmdBindPipeline(mCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, mGraphicsPipeline);
 	}
 }
 
