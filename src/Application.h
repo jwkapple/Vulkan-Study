@@ -128,6 +128,7 @@ private:
 	std::vector<VkImageView> mImageViews;
 	std::vector<VkFramebuffer> mSwapChainFramebuffers;
 	VkRenderPass mRenderPass;
+	VkPipeline mGraphicsPipeline;
 	Shader mShader;
 	VkCommandPool mCommandPool;
 	std::vector<VkCommandBuffer> mCommandBuffers;
