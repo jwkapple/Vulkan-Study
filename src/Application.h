@@ -64,6 +64,7 @@ private:
 
 	void InitWindow();
 	void CreateInstance();
+	void DrawFrame();
 
 	void SetupDebugMessenger();
 	void CreateSurface();
@@ -76,6 +77,8 @@ private:
 	void CreateFramebuffers();
 	void CreateCommandPool();
 	void CreateCommandBuffers();
+	void CreateSemaphores();
+	
 #pragma region DebugMessenger
 	bool CheckValidationLayerSupport();
 	std::vector<const char*> GetRequiredExtensions();
@@ -141,4 +144,6 @@ private:
 	bool enableValidationLayer;
 	std::vector<const char*> validationLayers;
 	std::vector<const char*> deviceExtensions;
+	VkSemaphore imageAvailableSemaphore;
+	VkSemaphore renderFinishedSemaphore;
 };

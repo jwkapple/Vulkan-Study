@@ -47,6 +47,10 @@ void Application::InitVulkan()
 	CreateSwapChain();
 	CreateImageViews();
 	CreateGraphicsPipeline();
+	CreateFramebuffers();
+	CreateCommandPool();
+	CreateCommandBuffers();
+	CreateSemaphores();
 }
 
 void Application::MainLoop()
@@ -54,6 +58,7 @@ void Application::MainLoop()
 	while (!glfwWindowShouldClose(mWindow))
 	{
 		glfwPollEvents();
+		DrawFrame();
 	}
 }
 
@@ -84,6 +89,10 @@ void Application::CleanUp()
 	}
 	
 	vkDestroyCommandPool(mDevice, mCommandPool, nullptr);
+
+	vkDestroySemaphore(mDevice, imageAvailableSemaphore, nullptr);
+	vkDestroySemaphore(mDevice, renderFinishedSemaphore, nullptr);
+
 	vkDestroyDevice(mDevice, nullptr);
 
 	glfwDestroyWindow(mWindow);
@@ -151,6 +160,12 @@ void Application::CreateInstance()
 	{
 		throw std::runtime_error("Failed to create Instance!");
 	}
+
+}
+
+void Application::DrawFrame()
+{
+
 
 }
 
@@ -432,12 +447,13 @@ void Application::CreateGraphicsPipeline()
 	scissor.extent = mSwapChainImageExtent;
 
 	// Create viewport state Info to bind viewport & scissor
-	VkPipelineViewportStateCreateInfo viewportStateCreateInfo{};
-	viewportStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-	viewportStateCreateInfo.pScissors = &scissor;
-	viewportStateCreateInfo.pViewports = &viewPort;
-	viewportStateCreateInfo.scissorCount = 1;
-	viewportStateCreateInfo.viewportCount = 1;
+	VkPipelineViewportStateCreateInfo viewportState{};
+	viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+	viewportState.pScissors = &scissor;
+	viewportState.pViewports = &viewPort;
+	viewportState.scissorCount = 1;
+	viewportState.viewportCount = 1;
+
 
 	// Create Rasterizer Info
 	VkPipelineRasterizationStateCreateInfo rasterizer{};
@@ -496,7 +512,7 @@ void Application::CreateGraphicsPipeline()
 	
 	pipelineInfo.pVertexInputState = &vertexInputInfo;
 	pipelineInfo.pInputAssemblyState = &inputAssembly;
-	pipelineInfo.pViewportState = &viewportStateCreateInfo;
+	pipelineInfo.pViewportState = &viewportState;
 	pipelineInfo.pRasterizationState = &rasterizer;
 	pipelineInfo.pMultisampleState = &multisampling;
 	pipelineInfo.pDepthStencilState = nullptr;
@@ -578,7 +594,7 @@ void Application::CreateCommandBuffers()
 		beginInfo.flags = 0;
 		beginInfo.pInheritanceInfo = nullptr;
 
-		// Being recording commands in command buffer
+		// Begin recording commands in command buffer
 		if (vkBeginCommandBuffer(mCommandBuffers[i], &beginInfo) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to beginning command buffer : " + i);
@@ -599,6 +615,27 @@ void Application::CreateCommandBuffers()
 		vkCmdBeginRenderPass(mCommandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE); 
 
 		vkCmdBindPipeline(mCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, mGraphicsPipeline);
+
+		vkCmdDraw(mCommandBuffers[i], 3, 1, 0, 0);
+
+		vkCmdEndRenderPass(mCommandBuffers[i]);
+
+		if (vkEndCommandBuffer(mCommandBuffers[i]) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to record command buffers!");
+		}
+	}
+}
+
+void Application::CreateSemaphores()
+{
+	VkSemaphoreCreateInfo semaphoreInfo{};
+	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+	if (vkCreateSemaphore(mDevice, &semaphoreInfo, nullptr, &imageAvailableSemaphore) != VK_SUCCESS ||
+		vkCreateSemaphore(mDevice, &semaphoreInfo, nullptr, &renderFinishedSemaphore) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create semaphores!");
 	}
 }
 
