@@ -112,8 +112,9 @@ private:
 	VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 #pragma endregion
 
-#pragma region Graphics Pipeline
-	
+#pragma region Shader Module
+	std::vector<char> ReadFile(const std::string& filename);
+	void CreateShaderModule(VkDevice device, const std::string& vertexPath, const std::string& fragmentPath);
 #pragma endregion
 
 
@@ -132,7 +133,8 @@ private:
 	std::vector<VkFramebuffer> mSwapChainFramebuffers;
 	VkRenderPass mRenderPass;
 	VkPipeline mGraphicsPipeline;
-	Shader mShader;
+	VkShaderModule mVertexShaderModule;
+	VkShaderModule mFragmentShaderModule;
 	VkCommandPool mCommandPool;
 	std::vector<VkCommandBuffer> mCommandBuffers;
 	VkPipelineLayout mPipelineLayout;

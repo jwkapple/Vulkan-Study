@@ -46,6 +46,7 @@ void Application::InitVulkan()
 	CreateLogicalDevice();
 	CreateSwapChain();
 	CreateImageViews();
+	CreateRenderPass();
 	CreateGraphicsPipeline();
 	CreateFramebuffers();
 	CreateCommandPool();
@@ -77,8 +78,8 @@ void Application::CleanUp()
 		vkDestroyImageView(mDevice, imageView, nullptr);
 	}
 
-	vkDestroyShaderModule(mDevice, mShader.GetVertexShaderModule(), nullptr);
-	vkDestroyShaderModule(mDevice, mShader.GetFragShaderModule(), nullptr);
+	vkDestroyShaderModule(mDevice, mVertexShaderModule, nullptr);
+	vkDestroyShaderModule(mDevice, mFragmentShaderModule, nullptr);
 	
 	vkDestroyRenderPass(mDevice, mRenderPass, nullptr);
 	vkDestroyPipelineLayout(mDevice, mPipelineLayout, nullptr);
@@ -402,19 +403,19 @@ void Application::CreateRenderPass()
 
 void Application::CreateGraphicsPipeline()
 {
-	mShader.CreateShaderModule(mDevice, "../../src/vert.spv", "../../src/frag.spv");
+	CreateShaderModule(mDevice, "../../src/vert.spv", "../../src/frag.spv");
 
 	// Create ShaderStage Info
 	VkPipelineShaderStageCreateInfo vertexShaderStageInfo{};
 	vertexShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	vertexShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-	vertexShaderStageInfo.module = mShader.GetVertexShaderModule();
+	vertexShaderStageInfo.module = mVertexShaderModule;
 	vertexShaderStageInfo.pName = "main";
 
 	VkPipelineShaderStageCreateInfo fragmentShaderStageInfo{};
 	fragmentShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	fragmentShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-	fragmentShaderStageInfo.module = mShader.GetFragShaderModule();
+	fragmentShaderStageInfo.module = mFragmentShaderModule;
 	fragmentShaderStageInfo.pName = "main";
 
 	VkPipelineShaderStageCreateInfo shaderStages[] = { vertexShaderStageInfo, fragmentShaderStageInfo };
@@ -539,7 +540,7 @@ void Application::CreateFramebuffers()
 	{
 		VkImageView attachments[] =
 		{
-			mSwapChainImages[i]
+			mImageViews[i]
 		};
 
 		VkFramebufferCreateInfo createInfo{};
@@ -872,4 +873,55 @@ VkExtent2D Application::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR & capabi
 		return actualExtent;
 	}
 }
+#pragma endregion
+
+#pragma region Shader Module
+std::vector<char> Application::ReadFile(const std::string & filename)
+{
+	std::ifstream file(filename, std::ios::ate | std::ios::binary);
+
+	if (!file.is_open())
+	{
+		throw std::runtime_error("Failed to open file!");
+	}
+
+	std::cerr << "Successfuly opend file" << std::endl;
+
+	size_t fileSize = (size_t)file.tellg();
+	std::vector<char> buffer(fileSize);
+
+	file.seekg(0);
+	file.read(buffer.data(), fileSize);
+
+	file.close();
+
+	return buffer;
+}
+
+void Application::CreateShaderModule(VkDevice device, const std::string & vertexPath, const std::string & fragmentPath)
+{
+	auto vertexCode = ReadFile(vertexPath);
+	auto fragCode = ReadFile(fragmentPath);
+
+	VkShaderModuleCreateInfo vertexCreateInfo{};
+	vertexCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+	vertexCreateInfo.codeSize = vertexCode.size();
+	vertexCreateInfo.pCode = reinterpret_cast<const uint32_t*>(vertexCode.data());
+
+	if (vkCreateShaderModule(device, &vertexCreateInfo, nullptr, &mVertexShaderModule) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create Vertex Shader Module!");
+	}
+
+	VkShaderModuleCreateInfo fragCreateInfo{};
+	fragCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+	fragCreateInfo.codeSize = fragCode.size();
+	fragCreateInfo.pCode = reinterpret_cast<const uint32_t*>(fragCode.data());
+
+	if (vkCreateShaderModule(device, &fragCreateInfo, nullptr, &mFragmentShaderModule) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create Fragment Shader Module!");
+	}
+}
+
 #pragma endregion
