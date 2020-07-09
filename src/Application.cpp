@@ -67,6 +67,8 @@ void Application::MainLoop()
 
 void Application::CleanUp()
 {
+	CleanUpSwapChain();
+
 	if (enableValidationLayer)
 	{
 		DestroyDebugUtilsMessengerEXT(mVulkanInstance, mDebugMessenger, nullptr);
@@ -74,22 +76,9 @@ void Application::CleanUp()
 
 	vkDestroySurfaceKHR(mVulkanInstance, mSurface, nullptr);
 	vkDestroyInstance(mVulkanInstance, nullptr);
-	vkDestroySwapchainKHR(mDevice, mSwapChain, nullptr);
-	for (auto imageView : mImageViews)
-	{
-		vkDestroyImageView(mDevice, imageView, nullptr);
-	}
 
 	vkDestroyShaderModule(mDevice, mVertexShaderModule, nullptr);
 	vkDestroyShaderModule(mDevice, mFragmentShaderModule, nullptr);
-	
-	vkDestroyRenderPass(mDevice, mRenderPass, nullptr);
-	vkDestroyPipelineLayout(mDevice, mPipelineLayout, nullptr);
-	
-	for (auto framebuffer : mSwapChainFramebuffers)
-	{
-		vkDestroyFramebuffer(mDevice, framebuffer, nullptr);
-	}
 	
 	vkDestroyCommandPool(mDevice, mCommandPool, nullptr);
 
@@ -100,6 +89,27 @@ void Application::CleanUp()
 
 	glfwDestroyWindow(mWindow);
 	glfwTerminate();
+}
+
+void Application::CleanUpSwapChain()
+{
+	for (auto framebuffer : mSwapChainFramebuffers)
+	{
+		vkDestroyFramebuffer(mDevice, framebuffer, nullptr);
+	}
+
+	vkFreeCommandBuffers(mDevice, mCommandPool, mCommandBuffers.size(), mCommandBuffers.data());
+
+	vkDestroyPipeline(mDevice, mGraphicsPipeline, nullptr);
+	vkDestroyPipelineLayout(mDevice, mPipelineLayout, nullptr);
+	vkDestroyRenderPass(mDevice, mRenderPass, nullptr);
+
+	for (auto imageView : mImageViews)
+	{
+		vkDestroyImageView(mDevice, imageView, nullptr);
+	}
+
+	vkDestroySwapchainKHR(mDevice, mSwapChain, nullptr);
 }
 
 void Application::InitWindow()
@@ -169,8 +179,18 @@ void Application::CreateInstance()
 void Application::DrawFrame()
 {
 	uint32_t imageIndex;
-	vkAcquireNextImageKHR(mDevice, mSwapChain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
-
+	
+	VkResult result = vkAcquireNextImageKHR(mDevice, mSwapChain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+	
+	if (result == VK_ERROR_OUT_OF_DATE_KHR)
+	{
+		RecreateSwapChain();
+		return;
+	}
+	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+	{
+		throw std::runtime_error("Failed to acquire swap chain image!");
+	}
 
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -206,8 +226,16 @@ void Application::DrawFrame()
 
 	presentInfo.pResults = nullptr; // optional
 
-	vkQueuePresentKHR(mPresentQueue, &presentInfo);
+	VkResult presentResult = vkQueuePresentKHR(mPresentQueue, &presentInfo);
 
+	if (presentResult == VK_ERROR_OUT_OF_DATE_KHR || presentResult == VK_SUBOPTIMAL_KHR)
+	{
+		RecreateSwapChain();
+	}
+	else if (result != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to present swap chain image!");
+	}
 }
 
 void Application::SetupDebugMessenger()
@@ -687,8 +715,30 @@ void Application::CreateSemaphores()
 	{
 		throw std::runtime_error("Failed to create semaphores!");
 	}
+}
 
+void Application::RecreateSwapChain()
+{
+	int width = 0, height = 0;
 
+	glfwGetFramebufferSize(mWindow, &width, &height);
+
+	while (width == 0 || height == 0)
+	{
+		glfwGetFramebufferSize(mWindow, &width, &height);
+		glfwWaitEvents();
+	}
+
+	vkDeviceWaitIdle(mDevice);
+	
+	CleanUpSwapChain();
+
+	CreateSwapChain();
+	CreateImageViews();
+	CreateRenderPass();
+	CreateGraphicsPipeline();
+	CreateFramebuffers();
+	CreateCommandBuffers();
 }
 
 #pragma region DebugMessenger
@@ -916,7 +966,10 @@ VkExtent2D Application::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR & capabi
 	}
 	else
 	{
-		VkExtent2D actualExtent = { mWidth, mHeight };
+		int width, height;
+		glfwGetFramebufferSize(mWindow, &width, &height);
+
+		VkExtent2D actualExtent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
 
 		actualExtent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, actualExtent.width));
 		actualExtent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, actualExtent.height));

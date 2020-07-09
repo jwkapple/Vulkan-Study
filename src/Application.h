@@ -60,7 +60,9 @@ public:
 private:
 	void InitVulkan();
 	void MainLoop();
+
 	void CleanUp();
+	void CleanUpSwapChain();
 
 	void InitWindow();
 	void CreateInstance();
@@ -78,6 +80,8 @@ private:
 	void CreateCommandPool();
 	void CreateCommandBuffers();
 	void CreateSemaphores();
+
+	void RecreateSwapChain();
 	
 #pragma region DebugMessenger
 	bool CheckValidationLayerSupport();
