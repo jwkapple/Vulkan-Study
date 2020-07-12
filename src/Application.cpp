@@ -498,12 +498,15 @@ void Application::CreateGraphicsPipeline()
 	VkPipelineShaderStageCreateInfo shaderStages[] = { vertexShaderStageInfo, fragmentShaderStageInfo };
 
 	// Create Vertex Input Info
+	auto bindingDescription = Vertex::getBindingDescription();
+	auto attributeDescription = Vertex::getAttributeDescriptions();
+
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	vertexInputInfo.vertexBindingDescriptionCount = 0;  // Set as 0 until vertex buffer chapter
-	vertexInputInfo.vertexAttributeDescriptionCount = 0;
-
-
+	vertexInputInfo.vertexBindingDescriptionCount = 1;
+	vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescription.size());
+	vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+	vertexInputInfo.pVertexAttributeDescriptions = attributeDescription.data();
 
 	// Create Input Assembly Info
 	VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
