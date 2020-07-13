@@ -29,45 +29,46 @@ Application::~Application()
 {
 }
 
-void Application::Run()
+void Application::run()
 {
-	InitWindow();
-	InitVulkan();
-	MainLoop();
-	CleanUp();
+	initWindow();
+	initVulkan();
+	mainLoop();
+	cleanUp();
 }
 
-void Application::InitVulkan()
+void Application::initVulkan()
 {
-	CreateInstance();
-	SetupDebugMessenger();
-	CreateSurface();
-	PickPhysicalDevice();
-	CreateLogicalDevice();
-	CreateSwapChain();
-	CreateImageViews();
-	CreateRenderPass();
-	CreateGraphicsPipeline();
-	CreateFramebuffers();
-	CreateCommandPool();
-	CreateCommandBuffers();
-	CreateSemaphores();
+	createInstance();
+	setupDebugMessenger();
+	createSurface();
+	pickPhysicalDevice();
+	createLogicalDevice();
+	createSwapChain();
+	createImageViews();
+	createRenderPass();
+	createGraphicsPipeline();
+	createFramebuffers();
+	createCommandPool();
+	createVertexBUffers();
+	createCommandBuffers();
+	createSemaphores();
 }
 
-void Application::MainLoop()
+void Application::mainLoop()
 {
 	while (!glfwWindowShouldClose(mWindow))
 	{
 		glfwPollEvents();
-		DrawFrame();
+		drawFrame();
 	}
 
 	vkDeviceWaitIdle(mDevice);
 }
 
-void Application::CleanUp()
+void Application::cleanUp()
 {
-	CleanUpSwapChain();
+	cleanUpSwapChain();
 
 	if (enableValidationLayer)
 	{
@@ -91,7 +92,7 @@ void Application::CleanUp()
 	glfwTerminate();
 }
 
-void Application::CleanUpSwapChain()
+void Application::cleanUpSwapChain()
 {
 	for (auto framebuffer : mSwapChainFramebuffers)
 	{
@@ -112,7 +113,7 @@ void Application::CleanUpSwapChain()
 	vkDestroySwapchainKHR(mDevice, mSwapChain, nullptr);
 }
 
-void Application::InitWindow()
+void Application::initWindow()
 {
 	glfwInit();
 
@@ -122,7 +123,7 @@ void Application::InitWindow()
 	mWindow = glfwCreateWindow(mWidth, mHeight, "Vulkan-Study", nullptr, nullptr);
 }
 
-void Application::CreateInstance()
+void Application::createInstance()
 {
 
 	if (enableValidationLayer && !CheckValidationLayerSupport())
@@ -176,7 +177,7 @@ void Application::CreateInstance()
 
 }
 
-void Application::DrawFrame()
+void Application::drawFrame()
 {
 	uint32_t imageIndex;
 	
@@ -184,7 +185,7 @@ void Application::DrawFrame()
 	
 	if (result == VK_ERROR_OUT_OF_DATE_KHR)
 	{
-		RecreateSwapChain();
+		recreateSwapChain();
 		return;
 	}
 	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
@@ -229,8 +230,8 @@ void Application::DrawFrame()
 	VkResult presentResult = vkQueuePresentKHR(mPresentQueue, &presentInfo);
 
 	if (presentResult == VK_ERROR_OUT_OF_DATE_KHR || presentResult == VK_SUBOPTIMAL_KHR)
-	{
-		RecreateSwapChain();
+	{ 
+		recreateSwapChain();
 	}
 	else if (result != VK_SUCCESS)
 	{
@@ -238,7 +239,7 @@ void Application::DrawFrame()
 	}
 }
 
-void Application::SetupDebugMessenger()
+void Application::setupDebugMessenger()
 {
 	if (!enableValidationLayer) return;
 
@@ -251,7 +252,7 @@ void Application::SetupDebugMessenger()
 	}
 }
 
-void Application::CreateSurface()
+void Application::createSurface()
 {
 	if (glfwCreateWindowSurface(mVulkanInstance, mWindow, nullptr, &mSurface) != VK_SUCCESS)
 	{
@@ -259,7 +260,7 @@ void Application::CreateSurface()
 	}
 }
 
-void Application::PickPhysicalDevice()
+void Application::pickPhysicalDevice()
 {
 	uint32_t deviceCount = 0;
 	vkEnumeratePhysicalDevices(mVulkanInstance, &deviceCount, nullptr);
@@ -284,7 +285,7 @@ void Application::PickPhysicalDevice()
 	}
 }
 
-void Application::CreateLogicalDevice()
+void Application::createLogicalDevice()
 {
 	QueueFamilyIndices indices = FindQueueFamilies(mPhysicalDevice);
 
@@ -338,7 +339,7 @@ vkGetDeviceQueue(mDevice, indices.GraphicsFamily, 0, &mGraphicsQueue);
 vkGetDeviceQueue(mDevice, indices.PresentFamily, 0, &mPresentQueue);
 }
 
-void Application::CreateSwapChain()
+void Application::createSwapChain()
 {
 	SwapChainSupportDetails details = QuerySwapChainSupport(mPhysicalDevice);
 
@@ -402,7 +403,7 @@ void Application::CreateSwapChain()
 	mSwapChainImageExtent = imageExtent;
 }
 
-void Application::CreateImageViews()
+void Application::createImageViews()
 {
 	mImageViews.resize(mSwapChainImages.size());
 
@@ -433,7 +434,7 @@ void Application::CreateImageViews()
 	}
 }
 
-void Application::CreateRenderPass()
+void Application::createRenderPass()
 {
 	VkAttachmentDescription colorAttachment{};
 	colorAttachment.format = mSwapChainImageFormat;
@@ -478,9 +479,9 @@ void Application::CreateRenderPass()
 	}  
 }
 
-void Application::CreateGraphicsPipeline()
+void Application::createGraphicsPipeline()
 {
-	CreateShaderModule(mDevice, "../../src/vert.spv", "../../src/frag.spv");
+	createShaderModule(mDevice, "../../src/vert.spv", "../../src/frag.spv");
 
 	// Create ShaderStage Info
 	VkPipelineShaderStageCreateInfo vertexShaderStageInfo{};
@@ -612,7 +613,7 @@ void Application::CreateGraphicsPipeline()
 	}
 }
 
-void Application::CreateFramebuffers()
+void Application::createFramebuffers()
 {
 	mSwapChainFramebuffers.resize(mSwapChainImages.size());
 
@@ -639,7 +640,7 @@ void Application::CreateFramebuffers()
 	}
 }
 
-void Application::CreateCommandPool()
+void Application::createCommandPool()
 {
 	QueueFamilyIndices indices = FindQueueFamilies(mPhysicalDevice);
 	VkCommandPoolCreateInfo poolInfo{};
@@ -653,7 +654,7 @@ void Application::CreateCommandPool()
 	}
 }
 
-void Application::CreateCommandBuffers()
+void Application::createCommandBuffers()
 {
 	mCommandBuffers.resize(mSwapChainFramebuffers.size());
 
@@ -708,7 +709,7 @@ void Application::CreateCommandBuffers()
 	}
 }
 
-void Application::CreateSemaphores()
+void Application::createSemaphores()
 {
 	VkSemaphoreCreateInfo semaphoreInfo{};
 	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -720,7 +721,7 @@ void Application::CreateSemaphores()
 	}
 }
 
-void Application::RecreateSwapChain()
+void Application::recreateSwapChain()
 {
 	int width = 0, height = 0;
 
@@ -734,14 +735,14 @@ void Application::RecreateSwapChain()
 
 	vkDeviceWaitIdle(mDevice);
 	
-	CleanUpSwapChain();
+	cleanUpSwapChain();
 
-	CreateSwapChain();
-	CreateImageViews();
-	CreateRenderPass();
-	CreateGraphicsPipeline();
-	CreateFramebuffers();
-	CreateCommandBuffers();
+	createSwapChain();
+	createImageViews();
+	createRenderPass();
+	createGraphicsPipeline();
+	createFramebuffers();
+	createCommandBuffers();
 }
 
 #pragma region DebugMessenger
@@ -886,6 +887,7 @@ QueueFamilyIndices Application::FindQueueFamilies(VkPhysicalDevice device)
 
 	return indices;
 }
+
 bool Application::CheckDeviceExtensionSupport(VkPhysicalDevice device)
 {
 	uint32_t extensionCount;
@@ -1005,7 +1007,7 @@ std::vector<char> Application::ReadFile(const std::string & filename)
 	return buffer;
 }
 
-void Application::CreateShaderModule(VkDevice device, const std::string & vertexPath, const std::string & fragmentPath)
+void Application::createShaderModule(VkDevice device, const std::string & vertexPath, const std::string & fragmentPath)
 {
 	auto vertexCode = ReadFile(vertexPath);
 	auto fragCode = ReadFile(fragmentPath);

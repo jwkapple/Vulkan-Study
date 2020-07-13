@@ -44,7 +44,7 @@ class Application
 public:
 	Application();
 	~Application();
-	void Run();
+	void run();
 
 	inline static Application* Get() { return sInstance; }
 	inline static Application* Create()
@@ -60,30 +60,30 @@ public:
 		return nullptr;
 	}
 private:
-	void InitVulkan();
-	void MainLoop();
+	void initVulkan();
+	void mainLoop();
 
-	void CleanUp();
-	void CleanUpSwapChain();
+	void cleanUp();
+	void cleanUpSwapChain();
 
-	void InitWindow();
-	void CreateInstance();
-	void DrawFrame();
+	void initWindow();
+	void createInstance();
+	void drawFrame();
 
-	void SetupDebugMessenger();
-	void CreateSurface();
-	void PickPhysicalDevice();
-	void CreateLogicalDevice();
-	void CreateSwapChain();
-	void CreateImageViews();
-	void CreateRenderPass();
-	void CreateGraphicsPipeline();
-	void CreateFramebuffers();
-	void CreateCommandPool();
-	void CreateCommandBuffers();
-	void CreateSemaphores();
+	void setupDebugMessenger();
+	void createSurface();
+	void pickPhysicalDevice();
+	void createLogicalDevice();
+	void createSwapChain();
+	void createImageViews();
+	void createRenderPass();
+	void createGraphicsPipeline();
+	void createFramebuffers();
+	void createCommandPool();
+	void createCommandBuffers();
+	void createSemaphores();
 
-	void RecreateSwapChain();
+	void recreateSwapChain();
 	
 #pragma region DebugMessenger
 	bool CheckValidationLayerSupport();
@@ -120,7 +120,7 @@ private:
 
 #pragma region Shader Module
 	std::vector<char> ReadFile(const std::string& filename);
-	void CreateShaderModule(VkDevice device, const std::string& vertexPath, const std::string& fragmentPath);
+	void createShaderModule(VkDevice device, const std::string& vertexPath, const std::string& fragmentPath);
 #pragma endregion
 
 
