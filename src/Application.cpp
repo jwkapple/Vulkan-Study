@@ -50,7 +50,7 @@ void Application::initVulkan()
 	createGraphicsPipeline();
 	createFramebuffers();
 	createCommandPool();
-	createVertexBUffers();
+	createVertexBuffers();
 	createCommandBuffers();
 	createSemaphores();
 }
@@ -80,6 +80,9 @@ void Application::cleanUp()
 
 	vkDestroyShaderModule(mDevice, mVertexShaderModule, nullptr);
 	vkDestroyShaderModule(mDevice, mFragmentShaderModule, nullptr);
+
+	vkDestroyBuffer(mDevice, mVertexBuffer, nullptr);
+	vkFreeMemory(mDevice, mVertexBufferMemory, nullptr);
 	
 	vkDestroyCommandPool(mDevice, mCommandPool, nullptr);
 
@@ -654,6 +657,44 @@ void Application::createCommandPool()
 	}
 }
 
+void Application::createVertexBuffers()
+{
+	VkBufferCreateInfo bufferInfo{};
+	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	bufferInfo.size = sizeof(vertices[0]) * vertices.size();
+	bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+	// Create vertex buffer
+	if (vkCreateBuffer(mDevice, &bufferInfo, nullptr, &mVertexBuffer) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create vertex buffer!");
+	}
+
+	VkMemoryRequirements memRequirments;
+	vkGetBufferMemoryRequirements(mDevice, mVertexBuffer, &memRequirments);
+
+	VkMemoryAllocateInfo alloInfo{};
+	alloInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	alloInfo.allocationSize = memRequirments.size;
+	alloInfo.memoryTypeIndex = findMemoryType(memRequirments.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+	// Allocate vertex buffer memory
+	if (vkAllocateMemory(mDevice, &alloInfo, nullptr, &mVertexBufferMemory) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to allocate vertex buffer memory!");
+	}
+
+	// Bind vertex buffer memory space to vertex buffer
+	vkBindBufferMemory(mDevice, mVertexBuffer, mVertexBufferMemory, 0);
+
+
+	void* data;
+	vkMapMemory(mDevice, mVertexBufferMemory, 0, bufferInfo.size, 0, &data);
+	memcpy(data, vertices.data(), (size_t)bufferInfo.size);
+	vkUnmapMemory(mDevice, mVertexBufferMemory);
+}
+
 void Application::createCommandBuffers()
 {
 	mCommandBuffers.resize(mSwapChainFramebuffers.size());
@@ -698,7 +739,13 @@ void Application::createCommandBuffers()
 
 		vkCmdBindPipeline(mCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, mGraphicsPipeline);
 
-		vkCmdDraw(mCommandBuffers[i], 3, 1, 0, 0);
+		VkBuffer vertexBuffers[] = { mVertexBuffer };
+		VkDeviceSize offsets[] = { 0 };
+
+		vkCmdBindVertexBuffers(mCommandBuffers[i], 0, 1, vertexBuffers, offsets);
+
+
+		vkCmdDraw(mCommandBuffers[i], static_cast<uint32_t>(vertices.size()), 1, 0, 0);
 
 		vkCmdEndRenderPass(mCommandBuffers[i]);
 
@@ -1031,6 +1078,19 @@ void Application::createShaderModule(VkDevice device, const std::string & vertex
 	{
 		throw std::runtime_error("Failed to create Fragment Shader Module!");
 	}
+}
+
+uint32_t Application::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
+{
+	VkPhysicalDeviceMemoryProperties memProperties;
+	vkGetPhysicalDeviceMemoryProperties(mPhysicalDevice, &memProperties);
+
+	for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+	{
+		if (typeFilter & (1 << i) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
+			return i;
+	}
+	return uint32_t();
 }
 
 #pragma endregion

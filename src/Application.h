@@ -80,6 +80,7 @@ private:
 	void createGraphicsPipeline();
 	void createFramebuffers();
 	void createCommandPool();
+	void createVertexBuffers();
 	void createCommandBuffers();
 	void createSemaphores();
 
@@ -123,6 +124,7 @@ private:
 	void createShaderModule(VkDevice device, const std::string& vertexPath, const std::string& fragmentPath);
 #pragma endregion
 
+	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
 private:
 	static Application* sInstance;
@@ -142,6 +144,8 @@ private:
 	VkShaderModule mVertexShaderModule;
 	VkShaderModule mFragmentShaderModule;
 	VkCommandPool mCommandPool;
+	VkBuffer mVertexBuffer;
+	VkDeviceMemory mVertexBufferMemory;
 	std::vector<VkCommandBuffer> mCommandBuffers;
 	VkPipelineLayout mPipelineLayout;
 	VkFormat mSwapChainImageFormat;

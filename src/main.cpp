@@ -10,7 +10,7 @@ int main()
 
 try
 	{
-		app->Run();
+		app->run();
 	}
 	catch (const std::exception& e)
 	{
