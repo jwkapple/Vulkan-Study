@@ -659,39 +659,18 @@ void Application::createCommandPool()
 
 void Application::createVertexBuffers()
 {
-	VkBufferCreateInfo bufferInfo{};
-	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	bufferInfo.size = sizeof(vertices[0]) * vertices.size();
-	bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	VkDeviceSize buffersize = sizeof(vertices[0]) * vertices.size();
+	createBuffer(buffersize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		mVertexBuffer, mVertexBufferMemory);
 
-	// Create vertex buffer
-	if (vkCreateBuffer(mDevice, &bufferInfo, nullptr, &mVertexBuffer) != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to create vertex buffer!");
-	}
-
-	VkMemoryRequirements memRequirments;
-	vkGetBufferMemoryRequirements(mDevice, mVertexBuffer, &memRequirments);
-
-	VkMemoryAllocateInfo alloInfo{};
-	alloInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	alloInfo.allocationSize = memRequirments.size;
-	alloInfo.memoryTypeIndex = findMemoryType(memRequirments.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-	// Allocate vertex buffer memory
-	if (vkAllocateMemory(mDevice, &alloInfo, nullptr, &mVertexBufferMemory) != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to allocate vertex buffer memory!");
-	}
 
 	// Bind vertex buffer memory space to vertex buffer
 	vkBindBufferMemory(mDevice, mVertexBuffer, mVertexBufferMemory, 0);
 
 
 	void* data;
-	vkMapMemory(mDevice, mVertexBufferMemory, 0, bufferInfo.size, 0, &data);
-	memcpy(data, vertices.data(), (size_t)bufferInfo.size);
+	vkMapMemory(mDevice, mVertexBufferMemory, 0, buffersize, 0, &data);
+	memcpy(data, vertices.data(), (size_t)buffersize);
 	vkUnmapMemory(mDevice, mVertexBufferMemory);
 }
 
@@ -790,6 +769,39 @@ void Application::recreateSwapChain()
 	createGraphicsPipeline();
 	createFramebuffers();
 	createCommandBuffers();
+}
+
+void Application::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer & buffer, VkDeviceMemory & bufferMemory)
+{
+	VkBufferCreateInfo bufferInfo{};
+	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	bufferInfo.size = size;
+	bufferInfo.usage = usage;
+	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+	// Create vertex buffer
+	if (vkCreateBuffer(mDevice, &bufferInfo, nullptr, &buffer) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create vertex buffer!");
+	}
+
+	VkMemoryRequirements memRequirments;
+	vkGetBufferMemoryRequirements(mDevice, buffer, &memRequirments);
+
+	VkMemoryAllocateInfo alloInfo{};
+	alloInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	alloInfo.allocationSize = memRequirments.size;
+	alloInfo.memoryTypeIndex = findMemoryType(memRequirments.memoryTypeBits, properties);
+
+	// Allocate vertex buffer memory
+	if (vkAllocateMemory(mDevice, &alloInfo, nullptr, &bufferMemory) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to allocate vertex buffer memory!");
+	}
+
+	// Bind vertex buffer memory space to vertex buffer
+	vkBindBufferMemory(mDevice, buffer, bufferMemory, 0);
+
 }
 
 #pragma region DebugMessenger

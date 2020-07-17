@@ -85,7 +85,9 @@ private:
 	void createSemaphores();
 
 	void recreateSwapChain();
-	
+	void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
+		VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+
 #pragma region DebugMessenger
 	bool CheckValidationLayerSupport();
 	std::vector<const char*> GetRequiredExtensions();
