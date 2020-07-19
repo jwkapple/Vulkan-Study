@@ -660,18 +660,24 @@ void Application::createCommandPool()
 void Application::createVertexBuffers()
 {
 	VkDeviceSize buffersize = sizeof(vertices[0]) * vertices.size();
-	createBuffer(buffersize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-		mVertexBuffer, mVertexBufferMemory);
 
-
-	// Bind vertex buffer memory space to vertex buffer
-	vkBindBufferMemory(mDevice, mVertexBuffer, mVertexBufferMemory, 0);
-
+	VkBuffer stagingBuffer;
+	VkDeviceMemory stagingBufferMemory;
+	createBuffer(buffersize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		stagingBuffer, stagingBufferMemory);
 
 	void* data;
-	vkMapMemory(mDevice, mVertexBufferMemory, 0, buffersize, 0, &data);
+	vkMapMemory(mDevice, stagingBufferMemory, 0, buffersize, 0, &data);
 	memcpy(data, vertices.data(), (size_t)buffersize);
-	vkUnmapMemory(mDevice, mVertexBufferMemory);
+	vkUnmapMemory(mDevice, stagingBufferMemory);
+
+	createBuffer(buffersize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		mVertexBuffer, mVertexBufferMemory);
+
+	copyBuffer(stagingBuffer, mVertexBuffer, buffersize);
+
+	vkDestroyBuffer(mDevice, stagingBuffer, nullptr);
+	vkFreeMemory(mDevice, stagingBufferMemory, nullptr);
 }
 
 void Application::createCommandBuffers()
@@ -802,6 +808,47 @@ void Application::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMe
 	// Bind vertex buffer memory space to vertex buffer
 	vkBindBufferMemory(mDevice, buffer, bufferMemory, 0);
 
+}
+
+void Application::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
+{
+	VkCommandBufferAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	allocInfo.commandPool = mCommandPool;
+	allocInfo.commandBufferCount = 1;
+
+	VkCommandBuffer commandBuffer;
+
+	if (vkAllocateCommandBuffers(mDevice, &allocInfo, &commandBuffer) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to allocate ");
+	}
+
+	VkCommandBufferBeginInfo beginInfo{};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+	vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+	VkBufferCopy copyRegion{};
+	copyRegion.size = size;
+	copyRegion.srcOffset = 0;
+	copyRegion.dstOffset = 0;
+
+	vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+
+	vkEndCommandBuffer(commandBuffer);
+
+	VkSubmitInfo submitInfo{};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.pCommandBuffers = &commandBuffer;
+	submitInfo.commandBufferCount = 1;
+	
+	vkQueueSubmit(mGraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+	vkQueueWaitIdle(mGraphicsQueue);
+
+	vkFreeCommandBuffers(mDevice, mCommandPool, 1, &commandBuffer);
 }
 
 #pragma region DebugMessenger
