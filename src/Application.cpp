@@ -51,6 +51,7 @@ void Application::initVulkan()
 	createFramebuffers();
 	createCommandPool();
 	createVertexBuffers();
+	createIndexBuffers();
 	createCommandBuffers();
 	createSemaphores();
 }
@@ -80,6 +81,9 @@ void Application::cleanUp()
 
 	vkDestroyShaderModule(mDevice, mVertexShaderModule, nullptr);
 	vkDestroyShaderModule(mDevice, mFragmentShaderModule, nullptr);
+
+	vkDestroyBuffer(mDevice, mIndexBuffer, nullptr);
+	vkFreeMemory(mDevice, mIndexBufferMemory, nullptr);
 
 	vkDestroyBuffer(mDevice, mVertexBuffer, nullptr);
 	vkFreeMemory(mDevice, mVertexBufferMemory, nullptr);
@@ -680,6 +684,27 @@ void Application::createVertexBuffers()
 	vkFreeMemory(mDevice, stagingBufferMemory, nullptr);
 }
 
+void Application::createIndexBuffers()
+{
+	VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+	VkBuffer stagingBuffer;
+	VkDeviceMemory stagingBufferMemory;
+
+	createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, stagingBuffer, stagingBufferMemory);
+
+	void* data;
+	vkMapMemory(mDevice, stagingBufferMemory, 0, bufferSize, 0, &data);
+	memcpy(data, indices.data(), (size_t)bufferSize);
+	vkUnmapMemory(mDevice, stagingBufferMemory);
+
+	createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, mIndexBuffer, mIndexBufferMemory);
+
+	copyBuffer(stagingBuffer, mIndexBuffer, bufferSize);
+
+	vkDestroyBuffer(mDevice, stagingBuffer, nullptr);
+	vkFreeMemory(mDevice, stagingBufferMemory, nullptr);
+}
+
 void Application::createCommandBuffers()
 {
 	mCommandBuffers.resize(mSwapChainFramebuffers.size());
@@ -705,7 +730,7 @@ void Application::createCommandBuffers()
 		// Begin recording commands in command buffer
 		if (vkBeginCommandBuffer(mCommandBuffers[i], &beginInfo) != VK_SUCCESS)
 		{
-			throw std::runtime_error("Failed to beginning command buffer : " + i);
+			throw std::runtime_error("Failed beginning command buffer : " + i);
 		}
 
 		VkRenderPassBeginInfo renderPassInfo{};
@@ -725,12 +750,14 @@ void Application::createCommandBuffers()
 		vkCmdBindPipeline(mCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, mGraphicsPipeline);
 
 		VkBuffer vertexBuffers[] = { mVertexBuffer };
+		
 		VkDeviceSize offsets[] = { 0 };
 
 		vkCmdBindVertexBuffers(mCommandBuffers[i], 0, 1, vertexBuffers, offsets);
 
+		vkCmdBindIndexBuffer(mCommandBuffers[i], mIndexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
-		vkCmdDraw(mCommandBuffers[i], static_cast<uint32_t>(vertices.size()), 1, 0, 0);
+		vkCmdDrawIndexed(mCommandBuffers[i], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
 		vkCmdEndRenderPass(mCommandBuffers[i]);
 
@@ -807,7 +834,6 @@ void Application::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMe
 
 	// Bind vertex buffer memory space to vertex buffer
 	vkBindBufferMemory(mDevice, buffer, bufferMemory, 0);
-
 }
 
 void Application::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)

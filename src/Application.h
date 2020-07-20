@@ -81,6 +81,7 @@ private:
 	void createFramebuffers();
 	void createCommandPool();
 	void createVertexBuffers();
+	void createIndexBuffers();
 	void createCommandBuffers();
 	void createSemaphores();
 
@@ -149,6 +150,8 @@ private:
 	VkCommandPool mCommandPool;
 	VkBuffer mVertexBuffer;
 	VkDeviceMemory mVertexBufferMemory;
+	VkBuffer mIndexBuffer;
+	VkDeviceMemory mIndexBufferMemory;
 	std::vector<VkCommandBuffer> mCommandBuffers;
 	VkPipelineLayout mPipelineLayout;
 	VkFormat mSwapChainImageFormat;
