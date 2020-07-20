@@ -47,11 +47,13 @@ void Application::initVulkan()
 	createSwapChain();
 	createImageViews();
 	createRenderPass();
+	createDescriptorSetLayout();
 	createGraphicsPipeline();
 	createFramebuffers();
 	createCommandPool();
 	createVertexBuffers();
 	createIndexBuffers();
+	createUniformBuffers();
 	createCommandBuffers();
 	createSemaphores();
 }
@@ -82,6 +84,8 @@ void Application::cleanUp()
 	vkDestroyShaderModule(mDevice, mVertexShaderModule, nullptr);
 	vkDestroyShaderModule(mDevice, mFragmentShaderModule, nullptr);
 
+	vkDestroyDescriptorSetLayout(mDevice, mDescriptorSetLayout, nullptr);
+
 	vkDestroyBuffer(mDevice, mIndexBuffer, nullptr);
 	vkFreeMemory(mDevice, mIndexBufferMemory, nullptr);
 
@@ -104,6 +108,12 @@ void Application::cleanUpSwapChain()
 	for (auto framebuffer : mSwapChainFramebuffers)
 	{
 		vkDestroyFramebuffer(mDevice, framebuffer, nullptr);
+	}
+
+	for (uint32_t i = 0; i < mSwapChainImages.size(); i++)
+	{
+		vkDestroyBuffer(mDevice, mUniformBuffers[i], nullptr);
+		vkFreeMemory(mDevice, mUniformBuffersMemory[i], nullptr);
 	}
 
 	vkFreeCommandBuffers(mDevice, mCommandPool, mCommandBuffers.size(), mCommandBuffers.data());
@@ -486,6 +496,27 @@ void Application::createRenderPass()
 	}  
 }
 
+void Application::createDescriptorSetLayout()
+{
+	VkDescriptorSetLayoutBinding uboLayoutBinding{};
+
+	uboLayoutBinding.binding = 0;
+	uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	uboLayoutBinding.descriptorCount = 1;
+	uboLayoutBinding.stageFlags = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
+
+	VkDescriptorSetLayoutCreateInfo layoutInfo{};
+
+	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layoutInfo.pBindings = &uboLayoutBinding;
+	layoutInfo.bindingCount = 1;
+
+	if (vkCreateDescriptorSetLayout(mDevice, &layoutInfo, nullptr, &mDescriptorSetLayout) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create descriptor set layout");
+	}
+}
+
 void Application::createGraphicsPipeline()
 {
 	createShaderModule(mDevice, "../../src/vert.spv", "../../src/frag.spv");
@@ -587,6 +618,8 @@ void Application::createGraphicsPipeline()
 	// Create Pipeline Layout Info
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipelineLayoutInfo.setLayoutCount = 1;
+	pipelineLayoutInfo.pSetLayouts = &mDescriptorSetLayout;
 
 	if (vkCreatePipelineLayout(mDevice, &pipelineLayoutInfo, nullptr, &mPipelineLayout) != VK_SUCCESS)
 	{
@@ -705,6 +738,19 @@ void Application::createIndexBuffers()
 	vkFreeMemory(mDevice, stagingBufferMemory, nullptr);
 }
 
+void Application::createUniformBuffers()
+{
+	VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+
+	mUniformBuffers.resize(mSwapChainImages.size());
+	mUniformBuffersMemory.resize(mSwapChainImages.size());
+
+	for (size_t i = 0; i < mSwapChainImages.size(); i++)
+	{
+		createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, mUniformBuffers[i], mUniformBuffersMemory[i]);
+	}
+}
+
 void Application::createCommandBuffers()
 {
 	mCommandBuffers.resize(mSwapChainFramebuffers.size());
@@ -801,6 +847,7 @@ void Application::recreateSwapChain()
 	createRenderPass();
 	createGraphicsPipeline();
 	createFramebuffers();
+	createUniformBuffers();
 	createCommandBuffers();
 }
 
@@ -875,6 +922,26 @@ void Application::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSiz
 	vkQueueWaitIdle(mGraphicsQueue);
 
 	vkFreeCommandBuffers(mDevice, mCommandPool, 1, &commandBuffer);
+}
+
+void Application::updateUniformBuffer(uint32_t currentImage)
+{
+	static auto startTime = std::chrono::high_resolution_clock::now();
+
+	auto currentTime = std::chrono::high_resolution_clock::now();
+	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+	UniformBufferObject ubo;
+	ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	ubo.proj = glm::perspective(glm::radians(45.0f), mSwapChainImageExtent.width / (float)mSwapChainImageExtent.height, 0.1f, 10.0f);
+	ubo.proj[1][1] *= -1;
+
+	void* data;
+	vkMapMemory(mDevice, mUniformBuffersMemory[currentImage], 0, sizeof(ubo), 0, &data);
+	memcpy(data, &ubo, sizeof(ubo));
+	vkUnmapMemory(mDevice, mUniformBuffersMemory[currentImage]);
+
 }
 
 #pragma region DebugMessenger
