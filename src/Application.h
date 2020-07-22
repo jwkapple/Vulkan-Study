@@ -87,6 +87,8 @@ private:
 	void createVertexBuffers();
 	void createIndexBuffers();
 	void createUniformBuffers();
+	void createDescriptorPool();
+	void createDescriptorSets();
 	void createCommandBuffers();
 	void createSemaphores();
 
@@ -160,6 +162,8 @@ private:
 	VkDeviceMemory mIndexBufferMemory;
 	std::vector<VkBuffer> mUniformBuffers;
 	std::vector<VkDeviceMemory> mUniformBuffersMemory;
+	VkDescriptorPool mDescriptorPool;
+	std::vector<VkDescriptorSet> mDescriptorSets;
 	std::vector<VkCommandBuffer> mCommandBuffers;
 	VkDescriptorSetLayout mDescriptorSetLayout;
 	VkPipelineLayout mPipelineLayout;

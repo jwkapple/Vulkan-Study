@@ -54,6 +54,8 @@ void Application::initVulkan()
 	createVertexBuffers();
 	createIndexBuffers();
 	createUniformBuffers();
+	createDescriptorPool;
+	createDescriptorSets;
 	createCommandBuffers();
 	createSemaphores();
 }
@@ -497,7 +499,7 @@ void Application::createRenderPass()
 }
 
 void Application::createDescriptorSetLayout()
-{
+{   
 	VkDescriptorSetLayoutBinding uboLayoutBinding{};
 
 	uboLayoutBinding.binding = 0;
@@ -580,7 +582,7 @@ void Application::createGraphicsPipeline()
 	rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 	rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
 	rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-	rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+	rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 	rasterizer.rasterizerDiscardEnable = VK_FALSE;
 	rasterizer.depthClampEnable = VK_FALSE;
 	rasterizer.lineWidth = 1.0f;
@@ -751,6 +753,60 @@ void Application::createUniformBuffers()
 	}
 }
 
+void Application::createDescriptorPool()
+{
+	VkDescriptorPoolSize poolSize{};
+	poolSize.descriptorCount = 1;
+	poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	
+	VkDescriptorPoolCreateInfo createInfo{};
+	createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	createInfo.poolSizeCount = 1;
+	createInfo.pPoolSizes = &poolSize;
+	createInfo.maxSets = static_cast<uint32_t>(mSwapChainImages.size());
+
+	if (vkCreateDescriptorPool(mDevice, &createInfo, nullptr, &mDescriptorPool) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create descriptor pool!");
+	}
+}
+
+void Application::createDescriptorSets()
+{	
+	std::vector<VkDescriptorSetLayout> layouts(mSwapChainImages.size(), mDescriptorSetLayout);
+
+	VkDescriptorSetAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	allocInfo.descriptorSetCount = static_cast<uint32_t>(mSwapChainImages.size());
+	allocInfo.descriptorPool = mDescriptorPool;
+	allocInfo.pSetLayouts = layouts.data();
+	
+	mDescriptorSets.resize(mSwapChainImages.size());
+	if (vkAllocateDescriptorSets(mDevice, &allocInfo, mDescriptorSets.data()) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to allocate descriptor sets!");
+	}
+
+	for (size_t i = 0; i < mSwapChainImages.size(); i++)
+	{
+		VkDescriptorBufferInfo bufferInfo{};
+		bufferInfo.buffer = mUniformBuffers[i];
+		bufferInfo.offset = 0;
+		bufferInfo.range = sizeof(UniformBufferObject);
+
+		VkWriteDescriptorSet writeDescriptor{};
+		writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		writeDescriptor.dstArrayElement = 0;
+		writeDescriptor.dstBinding = 0;
+		writeDescriptor.dstSet = mDescriptorSets[i];
+		writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		writeDescriptor.descriptorCount = 1;
+		writeDescriptor.pBufferInfo = &bufferInfo;
+	
+		vkUpdateDescriptorSets(mDevice, 1, &writeDescriptor, 0, nullptr);
+	}
+}
+
 void Application::createCommandBuffers()
 {
 	mCommandBuffers.resize(mSwapChainFramebuffers.size());
@@ -805,6 +861,8 @@ void Application::createCommandBuffers()
 
 		vkCmdDrawIndexed(mCommandBuffers[i], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
+		vkCmdBindDescriptorSets(mCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 0, 1, &mDescriptorSets[i], 0, nullptr);
+
 		vkCmdEndRenderPass(mCommandBuffers[i]);
 
 		if (vkEndCommandBuffer(mCommandBuffers[i]) != VK_SUCCESS)
@@ -848,6 +906,8 @@ void Application::recreateSwapChain()
 	createGraphicsPipeline();
 	createFramebuffers();
 	createUniformBuffers();
+	createDescriptorPool();
+	createDescriptorSets();
 	createCommandBuffers();
 }
 
