@@ -54,8 +54,8 @@ void Application::initVulkan()
 	createVertexBuffers();
 	createIndexBuffers();
 	createUniformBuffers();
-	createDescriptorPool;
-	createDescriptorSets;
+	createDescriptorPool();
+	createDescriptorSets();
 	createCommandBuffers();
 	createSemaphores();
 }
@@ -187,13 +187,11 @@ void Application::createInstance()
 	}
 
 	// Create Instance
-	VkResult bol = vkCreateInstance(&createInfo, nullptr, &mVulkanInstance);
 
 	if (vkCreateInstance(&createInfo, nullptr, &mVulkanInstance) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create Instance!");
 	}
-
 }
 
 void Application::drawFrame()
@@ -211,6 +209,8 @@ void Application::drawFrame()
 	{
 		throw std::runtime_error("Failed to acquire swap chain image!");
 	}
+
+	updateUniformBuffer(imageIndex);
 
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -505,7 +505,7 @@ void Application::createDescriptorSetLayout()
 	uboLayoutBinding.binding = 0;
 	uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	uboLayoutBinding.descriptorCount = 1;
-	uboLayoutBinding.stageFlags = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
+	uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
 	VkDescriptorSetLayoutCreateInfo layoutInfo{};
 
