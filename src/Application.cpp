@@ -2,6 +2,7 @@
 #include <iostream>	
 #include <stdexcept>
 #include <cstdlib>
+#include <cstring>
 
 
 #include "Application.h"
@@ -16,7 +17,7 @@ Application::Application()
 
 	validationLayers = 
 	{
-		"VK_LAYER_KHRONOS_validation"
+		"VK_LAYER_LUNARG_standard_validation"
 	};
 
 	deviceExtensions =
@@ -34,7 +35,7 @@ void Application::run()
 	initWindow();
 	initVulkan();
 	mainLoop();
-	cleanUp();
+	cleanUp();;
 }
 
 void Application::initVulkan()
@@ -476,7 +477,7 @@ void Application::createRenderPass()
 
 	VkSubpassDependency dependency{};
 	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-	dependency.srcSubpass = 0;
+	dependency.dstSubpass = 0;
 	dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 	dependency.srcAccessMask = 0;
 	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -842,7 +843,7 @@ void Application::createCommandBuffers()
 		renderPassInfo.renderArea.offset = { 0, 0 };
 		renderPassInfo.renderArea.extent = mSwapChainImageExtent;
 		
-		VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };  // Why not VkClearColorValue ?
+		VkClearValue clearColor = { 0.0f, 1.0f, 0.0f, 1.0f };  // Why not VkClearColorValue ?
 		renderPassInfo.clearValueCount = 1;
 		renderPassInfo.pClearValues = &clearColor;
 
@@ -859,9 +860,9 @@ void Application::createCommandBuffers()
 
 		vkCmdBindIndexBuffer(mCommandBuffers[i], mIndexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
-		vkCmdDrawIndexed(mCommandBuffers[i], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
-
 		vkCmdBindDescriptorSets(mCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 0, 1, &mDescriptorSets[i], 0, nullptr);
+		
+		vkCmdDrawIndexed(mCommandBuffers[i], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
 		vkCmdEndRenderPass(mCommandBuffers[i]);
 
@@ -1001,7 +1002,6 @@ void Application::updateUniformBuffer(uint32_t currentImage)
 	vkMapMemory(mDevice, mUniformBuffersMemory[currentImage], 0, sizeof(ubo), 0, &data);
 	memcpy(data, &ubo, sizeof(ubo));
 	vkUnmapMemory(mDevice, mUniformBuffersMemory[currentImage]);
-
 }
 
 #pragma region DebugMessenger
