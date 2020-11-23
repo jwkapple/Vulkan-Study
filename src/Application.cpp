@@ -757,9 +757,9 @@ void Application::createUniformBuffers()
 void Application::createDescriptorPool()
 {
 	VkDescriptorPoolSize poolSize{};
-	poolSize.descriptorCount = 1;
 	poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	
+	poolSize.descriptorCount = static_cast<uint32_t>(mSwapChainImages.size());
+
 	VkDescriptorPoolCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 	createInfo.poolSizeCount = 1;
