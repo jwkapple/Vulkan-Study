@@ -264,6 +264,8 @@ void Application::setupDebugMessenger()
 	if (!enableValidationLayer) return;
 
 	VkDebugUtilsMessengerCreateInfoEXT createInfo;
+	createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+	createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 	PopulateDebugMessengerCreateInfo(createInfo);
 
 	if (CreateDebugUtilsMessengerEXT(mVulkanInstance, &createInfo, nullptr, &mDebugMessenger) != VK_SUCCESS)
@@ -843,7 +845,7 @@ void Application::createCommandBuffers()
 		renderPassInfo.renderArea.offset = { 0, 0 };
 		renderPassInfo.renderArea.extent = mSwapChainImageExtent;
 		
-		VkClearValue clearColor = { 0.0f, 1.0f, 0.0f, 1.0f };  // Why not VkClearColorValue ?
+		VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };  // Why not VkClearColorValue ?
 		renderPassInfo.clearValueCount = 1;
 		renderPassInfo.pClearValues = &clearColor;
 
@@ -1047,7 +1049,7 @@ std::vector<const char*> Application::GetRequiredExtensions()
 	{
 		extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 	}
-
+	
 	return extensions;
 }
 
