@@ -78,11 +78,11 @@ void Application::cleanUp()
 
 	if (enableValidationLayer)
 	{
-		DestroyDebugUtilsMessengerEXT(mVulkanInstance, mDebugMessenger, nullptr);
+		DestroyDebugUtilsMessengerEXT(mInstance, mDebugMessenger, nullptr);
 	}
 
-	vkDestroySurfaceKHR(mVulkanInstance, mSurface, nullptr);
-	vkDestroyInstance(mVulkanInstance, nullptr);
+	vkDestroySurfaceKHR(mInstance, mSurface, nullptr);
+	vkDestroyInstance(mInstance, nullptr);
 
 	vkDestroyShaderModule(mDevice, mVertexShaderModule, nullptr);
 	vkDestroyShaderModule(mDevice, mFragmentShaderModule, nullptr);
@@ -189,7 +189,7 @@ void Application::createInstance()
 
 	// Create Instance
 
-	if (vkCreateInstance(&createInfo, nullptr, &mVulkanInstance) != VK_SUCCESS)
+	if (vkCreateInstance(&createInfo, nullptr, &mInstance) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create Instance!");
 	}
@@ -268,7 +268,7 @@ void Application::setupDebugMessenger()
 	createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 	PopulateDebugMessengerCreateInfo(createInfo);
 
-	if (CreateDebugUtilsMessengerEXT(mVulkanInstance, &createInfo, nullptr, &mDebugMessenger) != VK_SUCCESS)
+	if (CreateDebugUtilsMessengerEXT(mInstance, &createInfo, nullptr, &mDebugMessenger) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to setup debug messenger!");
 	}
@@ -276,7 +276,7 @@ void Application::setupDebugMessenger()
 
 void Application::createSurface()
 {
-	if (glfwCreateWindowSurface(mVulkanInstance, mWindow, nullptr, &mSurface) != VK_SUCCESS)
+	if (glfwCreateWindowSurface(mInstance, mWindow, nullptr, &mSurface) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create window surface!");
 	}
@@ -285,12 +285,12 @@ void Application::createSurface()
 void Application::pickPhysicalDevice()
 {
 	uint32_t deviceCount = 0;
-	vkEnumeratePhysicalDevices(mVulkanInstance, &deviceCount, nullptr);
+	vkEnumeratePhysicalDevices(mInstance, &deviceCount, nullptr);
 
 	if (deviceCount == 0) throw std::runtime_error("Failed to find GPUs with Vulkan support!");
 
 	std::vector<VkPhysicalDevice> devices(deviceCount);
-	vkEnumeratePhysicalDevices(mVulkanInstance, &deviceCount, devices.data());
+	vkEnumeratePhysicalDevices(mInstance, &deviceCount, devices.data());
 
 	for (const auto& device : devices)
 	{

@@ -21,18 +21,16 @@
 #include "Shader.h"
 #include "ApplicationData.h"
 
+#define IMPOSSIBLE 121312
 
 struct QueueFamilyIndices
 {
 	uint32_t GraphicsFamily;
 	uint32_t PresentFamily;
 
-	bool isComplete()
-	{
-		return (GraphicsFamily == 0 && PresentFamily == 0);
-	}
+	bool isComplete() { return (GraphicsFamily == 0 && PresentFamily == 0); }
 
-	QueueFamilyIndices() : GraphicsFamily(121312), PresentFamily(121312) {}
+	QueueFamilyIndices() : GraphicsFamily(IMPOSSIBLE), PresentFamily(IMPOSSIBLE) {}
 };
 
 struct SwapChainSupportDetails
@@ -106,6 +104,7 @@ private:
 		pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
 	void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT DebugMessenger
 		, const VkAllocationCallbacks* pAllocator);
+
 	// PFN_vkDebugUtilsMessengerCallbackEXT
 	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -142,7 +141,7 @@ private:
 	static Application* sInstance;
 private:
 	GLFWwindow* mWindow;
-	VkInstance mVulkanInstance;
+	VkInstance mInstance;
 	VkDebugUtilsMessengerEXT mDebugMessenger;
 	VkPhysicalDevice mPhysicalDevice;
 	VkDevice mDevice;
