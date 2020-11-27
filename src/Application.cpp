@@ -183,7 +183,6 @@ void Application::createInstance()
 	else
 	{
 		createInfo.enabledLayerCount = 0;
-		
 		createInfo.pNext = nullptr;
 	}
 
@@ -458,6 +457,7 @@ void Application::createImageViews()
 
 void Application::createRenderPass()
 {
+	// Attachment Initialization
 	VkAttachmentDescription colorAttachment{};
 	colorAttachment.format = mSwapChainImageFormat;
 	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -472,6 +472,7 @@ void Application::createRenderPass()
 	colorAttachmentRef.attachment = 0;
 	colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
+	// Subpass Initialization
 	VkSubpassDescription subpass{};
 	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	subpass.colorAttachmentCount = 1;
@@ -1053,7 +1054,7 @@ std::vector<const char*> Application::GetRequiredExtensions()
 	return extensions;
 }
 
-void Application::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT & createInfo)
+void Application::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
 {
 	createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
