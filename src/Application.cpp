@@ -52,6 +52,7 @@ void Application::initVulkan()
 	createGraphicsPipeline();
 	createFramebuffers();
 	createCommandPool();
+	createTextureImage();
 	createVertexBuffers();
 	createIndexBuffers();
 	createUniformBuffers();
@@ -698,6 +699,10 @@ void Application::createCommandPool()
 	{
 		throw std::runtime_error("Failed to create command pool!");
 	}
+}
+
+void Application::createTextureImage()
+{
 }
 
 void Application::createVertexBuffers()

@@ -10,6 +10,9 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
 #include <chrono>
 
 #include <vulkan/vulkan.h>
@@ -82,6 +85,7 @@ private:
 	void createGraphicsPipeline();
 	void createFramebuffers();
 	void createCommandPool();
+	void createTextureImage();
 	void createVertexBuffers();
 	void createIndexBuffers();
 	void createUniformBuffers();
