@@ -10,9 +10,6 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
-
 #include <chrono>
 
 #include <vulkan/vulkan.h>
@@ -99,6 +96,8 @@ private:
 		VkBuffer& buffer, VkDeviceMemory& bufferMemory);
 	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 	void updateUniformBuffer(uint32_t currentImage);
+	void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tilting,
+		VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
 
 #pragma region DebugMessenger
 	bool CheckValidationLayerSupport();
@@ -159,6 +158,8 @@ private:
 	VkShaderModule mVertexShaderModule;
 	VkShaderModule mFragmentShaderModule;
 	VkCommandPool mCommandPool;
+	VkImage mTextureImage;
+	VkDeviceMemory mTextureImageMemory;
 	VkBuffer mVertexBuffer;
 	VkDeviceMemory mVertexBufferMemory;
 	VkBuffer mIndexBuffer;
