@@ -56,6 +56,7 @@ void Application::initVulkan()
 	createFramebuffers();
 	createCommandPool();
 	createTextureImage();
+	createTextureImageView();
 	createVertexBuffers();
 	createIndexBuffers();
 	createUniformBuffers();
@@ -434,28 +435,7 @@ void Application::createImageViews()
 
 	for (uint32_t i = 0; i < mSwapChainImages.size(); i++)
 	{
-		VkImageViewCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		createInfo.image = mSwapChainImages[i];
-		createInfo.format = mSwapChainImageFormat;
-
-		createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-		createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-		createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-		createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-
-		// Describes image's purpose & which part of image to access
-		createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		createInfo.subresourceRange.layerCount = 1;
-		createInfo.subresourceRange.levelCount = 1;
-		createInfo.subresourceRange.baseMipLevel = 0;
-		createInfo.subresourceRange.baseArrayLayer = 0;
-
-		if (vkCreateImageView(mDevice, &createInfo, nullptr, &mImageViews[i]) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to create Image view : " + i);
-		}
+		mImageViews[i] = createImageView(mSwapChainImages[i], mSwapChainImageFormat);
 	}
 }
 
@@ -737,6 +717,11 @@ void Application::createTextureImage()
 	copyBufferToImage(stagingBuffer, mTextureImage, width, height);
 
 	transitionImageLayout(mTextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+}
+
+void Application::createTextureImageView()
+{
+	mTextureImageView = createImageView(mTextureImage, VK_FORMAT_R8G8B8A8_SRGB);
 }
 
 void Application::createVertexBuffers()
@@ -1131,6 +1116,36 @@ void Application::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t wid
 
 	vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 	endSingletimeCommands(commandBuffer);
+}
+
+VkImageView Application::createImageView(VkImage image, VkFormat format)
+{
+	VkImageView imageView;
+	VkImageViewCreateInfo createInfo{};
+
+	createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	createInfo.image = image;
+	createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	createInfo.format = format;
+
+	createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+	createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+	createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+	createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+	// Describes image's purpose & which part of image to access
+	createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	createInfo.subresourceRange.layerCount = 1;
+	createInfo.subresourceRange.levelCount = 1;
+	createInfo.subresourceRange.baseMipLevel = 0;
+	createInfo.subresourceRange.baseArrayLayer = 0;
+
+	if (vkCreateImageView(mDevice, &createInfo, nullptr, &imageView) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create texture image view!");
+	}
+
+	return imageView;
 }
 
 #pragma region DebugMessenger

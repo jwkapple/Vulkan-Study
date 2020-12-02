@@ -83,6 +83,7 @@ private:
 	void createFramebuffers();
 	void createCommandPool();
 	void createTextureImage();
+	void createTextureImageView();
 	void createVertexBuffers();
 	void createIndexBuffers();
 	void createUniformBuffers();
@@ -102,6 +103,8 @@ private:
 		VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
 	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 	void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
+	VkImageView createImageView(VkImage image, VkFormat format);
+	
 #pragma region DebugMessenger
 	bool CheckValidationLayerSupport();
 	std::vector<const char*> GetRequiredExtensions();
@@ -163,6 +166,7 @@ private:
 	VkCommandPool mCommandPool;
 	VkImage mTextureImage;
 	VkDeviceMemory mTextureImageMemory;
+	VkImageView mTextureImageView;
 	VkBuffer mVertexBuffer;
 	VkDeviceMemory mVertexBufferMemory;
 	VkBuffer mIndexBuffer;
