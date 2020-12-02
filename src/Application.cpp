@@ -135,6 +135,12 @@ void Application::cleanUpSwapChain()
 		vkDestroyImageView(mDevice, imageView, nullptr);
 	}
 
+	// Texture Related
+	vkDestroyImageView(mDevice, mTextureImageView, nullptr);
+
+	vkDestroyImage(mDevice, mTextureImage, nullptr);
+	vkFreeMemory(mDevice, mTextureImageMemory, nullptr);
+
 	vkDestroySwapchainKHR(mDevice, mSwapChain, nullptr);
 }
 
