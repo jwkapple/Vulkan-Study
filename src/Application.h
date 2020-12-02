@@ -84,6 +84,7 @@ private:
 	void createCommandPool();
 	void createTextureImage();
 	void createTextureImageView();
+	void createTextureSampler();
 	void createVertexBuffers();
 	void createIndexBuffers();
 	void createUniformBuffers();
@@ -167,6 +168,7 @@ private:
 	VkImage mTextureImage;
 	VkDeviceMemory mTextureImageMemory;
 	VkImageView mTextureImageView;
+	VkSampler mTextureSampler;
 	VkBuffer mVertexBuffer;
 	VkDeviceMemory mVertexBufferMemory;
 	VkBuffer mIndexBuffer;

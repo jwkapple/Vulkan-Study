@@ -57,6 +57,7 @@ void Application::initVulkan()
 	createCommandPool();
 	createTextureImage();
 	createTextureImageView();
+	createTextureSampler();
 	createVertexBuffers();
 	createIndexBuffers();
 	createUniformBuffers();
@@ -140,6 +141,7 @@ void Application::cleanUpSwapChain()
 
 	vkDestroyImage(mDevice, mTextureImage, nullptr);
 	vkFreeMemory(mDevice, mTextureImageMemory, nullptr);
+	vkDestroySampler(mDevice, mTextureSampler, nullptr);
 
 	vkDestroySwapchainKHR(mDevice, mSwapChain, nullptr);
 }
@@ -728,6 +730,39 @@ void Application::createTextureImage()
 void Application::createTextureImageView()
 {
 	mTextureImageView = createImageView(mTextureImage, VK_FORMAT_R8G8B8A8_SRGB);
+}
+
+void Application::createTextureSampler()
+{
+	VkSamplerCreateInfo createInfo{};
+	createInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	createInfo.minFilter = VK_FILTER_LINEAR;
+	createInfo.magFilter = VK_FILTER_LINEAR;
+	createInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	createInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	createInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	createInfo.anisotropyEnable = VK_TRUE;
+
+	VkPhysicalDeviceProperties properties{};
+	vkGetPhysicalDeviceProperties(mPhysicalDevice, &properties);
+	
+	createInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
+	createInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+	createInfo.unnormalizedCoordinates = VK_FALSE;
+
+	createInfo.compareEnable = VK_FALSE;
+	createInfo.compareOp = VK_COMPARE_OP_NEVER;
+
+	createInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	createInfo.minLod = 0.0f;
+	createInfo.maxLod = 0.0f;
+	createInfo.mipLodBias = 0.0f;
+
+	if (vkCreateSampler(mDevice, &createInfo, nullptr, &mTextureSampler) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create Sampler!");
+	}
+	
 }
 
 void Application::createVertexBuffers()
