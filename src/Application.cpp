@@ -496,27 +496,29 @@ void Application::createRenderPass()
 
 void Application::createDescriptorSetLayout()
 {   
-	VkDescriptorSetLayoutBinding LayoutBindings[2];
+	VkDescriptorSetLayoutBinding uboLayoutBinding{};
+	uboLayoutBinding.binding = 0;
+	uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	uboLayoutBinding.descriptorCount = 1;
+	uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-	LayoutBindings[0].binding = 0;
-	LayoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	LayoutBindings[0].descriptorCount = 1;
-	LayoutBindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	VkDescriptorSetLayoutBinding imageSamplerLayoutBinding{};
+	imageSamplerLayoutBinding.binding = 1;
+	imageSamplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	imageSamplerLayoutBinding.descriptorCount = 1;
+	imageSamplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-	LayoutBindings[1].binding = 1;
-	LayoutBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-	LayoutBindings[1].descriptorCount = 1;
-	LayoutBindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	std::array<VkDescriptorSetLayoutBinding, 2> bindings{ uboLayoutBinding, imageSamplerLayoutBinding };
 
 	VkDescriptorSetLayoutCreateInfo layoutInfo{};
 
 	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	layoutInfo.pBindings = LayoutBindings;
-	layoutInfo.bindingCount = 2;
+	layoutInfo.pBindings = bindings.data();
+	layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
 
 	if (vkCreateDescriptorSetLayout(mDevice, &layoutInfo, nullptr, &mDescriptorSetLayout) != VK_SUCCESS)
 	{
-		throw std::runtime_error("Failed to create descriptor set layout");
+		throw std::runtime_error("Failed to create descriptor set layout!");
 	}
 }
 
@@ -544,6 +546,7 @@ void Application::createGraphicsPipeline()
 	auto attributeDescription = Vertex::getAttributeDescriptions();
 
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+	
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 	vertexInputInfo.vertexBindingDescriptionCount = 1;
 	vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescription.size());
@@ -662,10 +665,7 @@ void Application::createFramebuffers()
 
 	for (uint32_t i = 0; i < mSwapChainImages.size(); i++)
 	{
-		VkImageView attachments[] =
-		{
-			mImageViews[i]
-		};
+		VkImageView attachments[] = { mImageViews[i] };
 
 		VkFramebufferCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -727,7 +727,7 @@ void Application::createTextureImage()
 	
 	transitionImageLayout(mTextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-	copyBufferToImage(stagingBuffer, mTextureImage, width, height);
+	copyBufferToImage(stagingBuffer, mTextureImage, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
 
 	transitionImageLayout(mTextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 }
@@ -752,16 +752,12 @@ void Application::createTextureSampler()
 	vkGetPhysicalDeviceProperties(mPhysicalDevice, &properties);
 	
 	createInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
-	createInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+	createInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_WHITE;
 	createInfo.unnormalizedCoordinates = VK_FALSE;
 
 	createInfo.compareEnable = VK_FALSE;
-	createInfo.compareOp = VK_COMPARE_OP_NEVER;
-
+	createInfo.compareOp = VK_COMPARE_OP_ALWAYS;
 	createInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-	createInfo.minLod = 0.0f;
-	createInfo.maxLod = 0.0f;
-	createInfo.mipLodBias = 0.0f;
 
 	if (vkCreateSampler(mDevice, &createInfo, nullptr, &mTextureSampler) != VK_SUCCESS)
 	{
@@ -829,7 +825,7 @@ void Application::createUniformBuffers()
 
 void Application::createDescriptorPool()
 {
-	VkDescriptorPoolSize poolSize[2];
+	std::array<VkDescriptorPoolSize, 2> poolSize;
 	poolSize[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	poolSize[0].descriptorCount = static_cast<uint32_t>(mSwapChainImages.size());
 
@@ -838,8 +834,8 @@ void Application::createDescriptorPool()
 
 	VkDescriptorPoolCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-	createInfo.poolSizeCount = 2;
-	createInfo.pPoolSizes = poolSize;
+	createInfo.poolSizeCount = static_cast<uint32_t>(poolSize.size());
+	createInfo.pPoolSizes = poolSize.data();
 	createInfo.maxSets = static_cast<uint32_t>(mSwapChainImages.size());
 
 	if (vkCreateDescriptorPool(mDevice, &createInfo, nullptr, &mDescriptorPool) != VK_SUCCESS)
@@ -876,7 +872,7 @@ void Application::createDescriptorSets()
 		imageInfo.imageView = mTextureImageView;
 		imageInfo.sampler = mTextureSampler;
 
-		VkWriteDescriptorSet writeDescriptor[2];
+		std::array<VkWriteDescriptorSet, 2> writeDescriptor{};
 		writeDescriptor[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		writeDescriptor[0].dstBinding = 0;
 		writeDescriptor[0].dstArrayElement = 0;
@@ -893,7 +889,7 @@ void Application::createDescriptorSets()
 		writeDescriptor[1].descriptorCount = 1;
 		writeDescriptor[1].pImageInfo = &imageInfo;
 	
-		vkUpdateDescriptorSets(mDevice, 2, writeDescriptor, 0, nullptr);
+		vkUpdateDescriptorSets(mDevice, static_cast<uint32_t>(writeDescriptor.size()), writeDescriptor.data(), 0, nullptr);
 	}
 }
 
@@ -1162,19 +1158,21 @@ void Application::transitionImageLayout(VkImage image, VkFormat format, VkImageL
 	endSingletimeCommands(commandBuffer);
 }
 
-void Application::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
+void Application::copyBufferToImage(VkBuffer& buffer, VkImage& image, uint32_t width, uint32_t height)
 {
 	VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
 	VkBufferImageCopy region{};
 	region.bufferImageHeight = height;
 	region.bufferOffset = 0;
-	region.bufferRowLength;
-	
+	region.bufferRowLength = 0;
+
 	region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	region.imageSubresource.baseArrayLayer = 0;
 	region.imageSubresource.layerCount = 1;
 	region.imageSubresource.mipLevel = 0;
+	region.imageOffset = { 0, 0, 0 };
+	region.imageExtent = { width, height, 1 };
 
 	vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 	endSingletimeCommands(commandBuffer);

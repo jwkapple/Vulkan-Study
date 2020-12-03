@@ -42,6 +42,7 @@ struct Vertex
 		attributeDescription[1].format = VK_FORMAT_R32G32B32_SFLOAT;
 		attributeDescription[1].offset = offsetof(Vertex, color);
 
+		// TexCoord Attribute
 		attributeDescription[2].binding = 0;
 		attributeDescription[2].location = 2;
 		attributeDescription[2].format = VK_FORMAT_R32G32_SFLOAT;
