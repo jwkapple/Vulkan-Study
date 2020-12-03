@@ -496,18 +496,23 @@ void Application::createRenderPass()
 
 void Application::createDescriptorSetLayout()
 {   
-	VkDescriptorSetLayoutBinding uboLayoutBinding{};
+	VkDescriptorSetLayoutBinding LayoutBindings[2];
 
-	uboLayoutBinding.binding = 0;
-	uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	uboLayoutBinding.descriptorCount = 1;
-	uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	LayoutBindings[0].binding = 0;
+	LayoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	LayoutBindings[0].descriptorCount = 1;
+	LayoutBindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+	LayoutBindings[1].binding = 1;
+	LayoutBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+	LayoutBindings[1].descriptorCount = 1;
+	LayoutBindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 	VkDescriptorSetLayoutCreateInfo layoutInfo{};
 
 	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	layoutInfo.pBindings = &uboLayoutBinding;
-	layoutInfo.bindingCount = 1;
+	layoutInfo.pBindings = LayoutBindings;
+	layoutInfo.bindingCount = 2;
 
 	if (vkCreateDescriptorSetLayout(mDevice, &layoutInfo, nullptr, &mDescriptorSetLayout) != VK_SUCCESS)
 	{
@@ -824,14 +829,17 @@ void Application::createUniformBuffers()
 
 void Application::createDescriptorPool()
 {
-	VkDescriptorPoolSize poolSize{};
-	poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	poolSize.descriptorCount = static_cast<uint32_t>(mSwapChainImages.size());
+	VkDescriptorPoolSize poolSize[2];
+	poolSize[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	poolSize[0].descriptorCount = static_cast<uint32_t>(mSwapChainImages.size());
+
+	poolSize[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	poolSize[1].descriptorCount = static_cast<uint32_t>(mSwapChainImages.size());
 
 	VkDescriptorPoolCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-	createInfo.poolSizeCount = 1;
-	createInfo.pPoolSizes = &poolSize;
+	createInfo.poolSizeCount = 2;
+	createInfo.pPoolSizes = poolSize;
 	createInfo.maxSets = static_cast<uint32_t>(mSwapChainImages.size());
 
 	if (vkCreateDescriptorPool(mDevice, &createInfo, nullptr, &mDescriptorPool) != VK_SUCCESS)
@@ -863,16 +871,29 @@ void Application::createDescriptorSets()
 		bufferInfo.offset = 0;
 		bufferInfo.range = sizeof(UniformBufferObject);
 
-		VkWriteDescriptorSet writeDescriptor{};
-		writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		writeDescriptor.dstArrayElement = 0;
-		writeDescriptor.dstBinding = 0;
-		writeDescriptor.dstSet = mDescriptorSets[i];
-		writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		writeDescriptor.descriptorCount = 1;
-		writeDescriptor.pBufferInfo = &bufferInfo;
+		VkDescriptorImageInfo imageInfo{};
+		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		imageInfo.imageView = mTextureImageView;
+		imageInfo.sampler = mTextureSampler;
+
+		VkWriteDescriptorSet writeDescriptor[2];
+		writeDescriptor[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		writeDescriptor[0].dstBinding = 0;
+		writeDescriptor[0].dstArrayElement = 0;
+		writeDescriptor[0].dstSet = mDescriptorSets[i];
+		writeDescriptor[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		writeDescriptor[0].descriptorCount = 1;
+		writeDescriptor[0].pBufferInfo = &bufferInfo;
+
+		writeDescriptor[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		writeDescriptor[1].dstBinding = 1;
+		writeDescriptor[1].dstArrayElement = 0;
+		writeDescriptor[1].dstSet = mDescriptorSets[i];
+		writeDescriptor[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		writeDescriptor[1].descriptorCount = 1;
+		writeDescriptor[1].pImageInfo = &imageInfo;
 	
-		vkUpdateDescriptorSets(mDevice, 1, &writeDescriptor, 0, nullptr);
+		vkUpdateDescriptorSets(mDevice, 2, writeDescriptor, 0, nullptr);
 	}
 }
 
@@ -983,26 +1004,26 @@ void Application::recreateSwapChain()
 void Application::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer & buffer, VkDeviceMemory & bufferMemory)
 {
 	VkBufferCreateInfo bufferInfo{};
+
 	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 	bufferInfo.size = size;
 	bufferInfo.usage = usage;
 	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-	// Create vertex buffer
+	
 	if (vkCreateBuffer(mDevice, &bufferInfo, nullptr, &buffer) != VK_SUCCESS)
 	{
-		throw std::runtime_error("Failed to create vertex buffer!");
+		throw std::runtime_error("Failed to create Buffer!");
 	}
 
-	VkMemoryRequirements memRequirments;
+	VkMemoryRequirements memRequirments{};
 	vkGetBufferMemoryRequirements(mDevice, buffer, &memRequirments);
 
-	VkMemoryAllocateInfo alloInfo{};
-	alloInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	alloInfo.allocationSize = memRequirments.size;
-	alloInfo.memoryTypeIndex = findMemoryType(memRequirments.memoryTypeBits, properties);
+	VkMemoryAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	allocInfo.allocationSize = size;
+	allocInfo.memoryTypeIndex = findMemoryType(memRequirments.memoryTypeBits, properties);
 	
-	if (vkAllocateMemory(mDevice, &alloInfo, nullptr, &bufferMemory) != VK_SUCCESS)
+	if (vkAllocateMemory(mDevice, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to allocate buffer memory!");
 	}
