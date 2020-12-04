@@ -55,6 +55,7 @@ void Application::initVulkan()
 	createGraphicsPipeline();
 	createFramebuffers();
 	createCommandPool();
+	createDepthResources();
 	createTextureImage();
 	createTextureImageView();
 	createTextureSampler();
@@ -632,6 +633,10 @@ void Application::createGraphicsPipeline()
 		throw std::runtime_error("Failed to create pipeline layout!");
 	}
 
+	// Create Depth Stencil State Info
+	VkPipelineDepthStencilStateCreateInfo depthStencil{};
+	depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+	
 	// Create Graphics Pipeline
 	VkGraphicsPipelineCreateInfo pipelineInfo{};
 	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -695,6 +700,10 @@ void Application::createCommandPool()
 	{
 		throw std::runtime_error("Failed to create command pool!");
 	}
+}
+
+void Application::createDepthResources()
+{
 }
 
 void Application::createTextureImage()

@@ -4,7 +4,7 @@
 #include <GLFW/glfw3.h>
 
 #define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE // Set depth range [-1.0, 1.0] to [0.0, 2.0]
 #include <glm/glm.hpp>
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
@@ -82,6 +82,7 @@ private:
 	void createGraphicsPipeline();
 	void createFramebuffers();
 	void createCommandPool();
+	void createDepthResources();
 	void createTextureImage();
 	void createTextureImageView();
 	void createTextureSampler();
@@ -173,6 +174,9 @@ private:
 	VkDeviceMemory mVertexBufferMemory;
 	VkBuffer mIndexBuffer;
 	VkDeviceMemory mIndexBufferMemory;
+	VkImage mDepthImage;
+	VkDeviceMemory mDepthImageMemory;
+	VkImageView mDepthImageView;
 	std::vector<VkBuffer> mUniformBuffers;
 	std::vector<VkDeviceMemory> mUniformBuffersMemory;
 	VkDescriptorPool mDescriptorPool;
