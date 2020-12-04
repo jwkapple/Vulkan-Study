@@ -80,9 +80,9 @@ private:
 	void createRenderPass();
 	void createDescriptorSetLayout();
 	void createGraphicsPipeline();
+	void createDepthResources();
 	void createFramebuffers();
 	void createCommandPool();
-	void createDepthResources();
 	void createTextureImage();
 	void createTextureImageView();
 	void createTextureSampler();
@@ -105,7 +105,7 @@ private:
 		VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
 	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 	void copyBufferToImage(VkBuffer& buffer, VkImage& image, uint32_t width, uint32_t height);
-	VkImageView createImageView(VkImage image, VkFormat format);
+	VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags flags);
 	
 #pragma region DebugMessenger
 	bool CheckValidationLayerSupport();
@@ -146,8 +146,16 @@ private:
 	void createShaderModule(VkDevice device, const std::string& vertexPath, const std::string& fragmentPath);
 #pragma endregion
 
-	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
-
+	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);\
+	VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
+	bool hasStenCilComponent(VkFormat format);
+	inline VkFormat findDepthFormat() {
+		return findSupportedFormat(
+			{ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
+			VK_IMAGE_TILING_OPTIMAL,
+			VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+		);
+	}
 private:
 	static Application* sInstance;
 private:
