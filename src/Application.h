@@ -86,6 +86,7 @@ private:
 	void createTextureImage();
 	void createTextureImageView();
 	void createTextureSampler();
+	void loadModel();
 	void createVertexBuffers();
 	void createIndexBuffers();
 	void createUniformBuffers();
@@ -178,6 +179,8 @@ private:
 	VkDeviceMemory mTextureImageMemory;
 	VkImageView mTextureImageView;
 	VkSampler mTextureSampler;
+	std::vector<Vertex> vertices;
+	std::vector<uint32_t> indices;
 	VkBuffer mVertexBuffer;
 	VkDeviceMemory mVertexBufferMemory;
 	VkBuffer mIndexBuffer;

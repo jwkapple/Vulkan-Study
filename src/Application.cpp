@@ -2,6 +2,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+#define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
 
 #include <iostream>	
@@ -12,11 +13,17 @@
 
 #include "Application.h"
 
+const uint32_t WIDTH = 800;
+const uint32_t HEIGHT = 600;
+
+const std::string MODEL_PATH = "../../models/viking_room.obj";
+const std::string TEXTURE_PATH = "../../textures/viking_room.png";
+
 Application* Application::sInstance = nullptr;
 
 
 Application::Application()
-	: mWidth(800), mHeight(600), enableValidationLayer(true), mPhysicalDevice(VK_NULL_HANDLE)
+	: mWidth(WIDTH), mHeight(HEIGHT), enableValidationLayer(true), mPhysicalDevice(VK_NULL_HANDLE)
 {
 	sInstance = this;
 
@@ -61,6 +68,7 @@ void Application::initVulkan()
 	createTextureImage();
 	createTextureImageView();
 	createTextureSampler();
+	loadModel();
 	createVertexBuffers();
 	createIndexBuffers();
 	createUniformBuffers();
@@ -744,7 +752,7 @@ void Application::createTextureImage()
 {
 	int width, height, channels;
 
-	stbi_uc* pixels = stbi_load("../../textures/texture0.jpg", &width, &height, &channels, STBI_rgb_alpha);
+	stbi_uc* pixels = stbi_load(TEXTURE_PATH.c_str(), &width, &height, &channels, STBI_rgb_alpha);
 	VkDeviceSize textureSize = width * height * 4;
 
 	if (!pixels)
@@ -807,6 +815,10 @@ void Application::createTextureSampler()
 		throw std::runtime_error("Failed to create Sampler!");
 	}
 	
+}
+
+void Application::loadModel()
+{
 }
 
 void Application::createVertexBuffers()
@@ -989,7 +1001,7 @@ void Application::createCommandBuffers()
 
 		vkCmdBindVertexBuffers(mCommandBuffers[i], 0, 1, vertexBuffers, offsets);
 
-		vkCmdBindIndexBuffer(mCommandBuffers[i], mIndexBuffer, 0, VK_INDEX_TYPE_UINT16);
+		vkCmdBindIndexBuffer(mCommandBuffers[i], mIndexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
 		vkCmdBindDescriptorSets(mCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 0, 1, &mDescriptorSets[i], 0, nullptr);
 		
