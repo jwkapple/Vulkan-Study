@@ -2,6 +2,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+#include <tiny_obj_loader.h>
+
 #include <iostream>	
 #include <stdexcept>
 #include <cstdlib>
@@ -1204,7 +1206,6 @@ void Application::transitionImageLayout(VkImage image, VkFormat format, VkImageL
 	barrier.subresourceRange.baseArrayLayer = 0;
 	barrier.subresourceRange.baseMipLevel = 0;
 	
-
 	vkCmdPipelineBarrier(commandBuffer, 0, 0, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
 	endSingletimeCommands(commandBuffer);
@@ -1282,10 +1283,7 @@ bool Application::CheckValidationLayerSupport()
 			}
 		}
 
-		if (!layerFound)
-		{
-			return false;
-		}
+		if (!layerFound) return false;
 	}
 
 	return true;
@@ -1321,23 +1319,15 @@ VkResult Application::CreateDebugUtilsMessengerEXT(VkInstance instance, const Vk
 {
 	auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance,
 		"vkCreateDebugUtilsMessengerEXT");
-	if (func != nullptr)
-	{
-		return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-	}
-	else
-	{
-		return VK_ERROR_EXTENSION_NOT_PRESENT;
-	}
+	if (func != nullptr) return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
+	else return VK_ERROR_EXTENSION_NOT_PRESENT;
 }
 
 void Application::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator)
 {
 	auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-	if (func != nullptr)
-	{
-		func(instance, debugMessenger, pAllocator);
-	}
+	if (func != nullptr) func(instance, debugMessenger, pAllocator);
+
 }
 
 #pragma endregion
