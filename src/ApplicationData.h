@@ -12,7 +12,7 @@
 struct Vertex
 {
 	glm::vec3 pos;
-	glm::vec3 color;
+	glm::vec3 normal;
 	glm::vec2 texCoord;
 
 	static VkVertexInputBindingDescription getBindingDescription()
@@ -36,11 +36,11 @@ struct Vertex
 		attributeDescription[0].format = VK_FORMAT_R32G32B32_SFLOAT;
 		attributeDescription[0].offset = offsetof(Vertex, pos);
 
-		// Color Attribute
+		// Normal Attribute
 		attributeDescription[1].binding = 0;
 		attributeDescription[1].location = 1;
 		attributeDescription[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-		attributeDescription[1].offset = offsetof(Vertex, color);
+		attributeDescription[1].offset = offsetof(Vertex, normal);
 
 		// TexCoord Attribute
 		attributeDescription[2].binding = 0;
@@ -57,23 +57,8 @@ struct UniformBufferObject {
 	glm::mat4 view;
 	glm::mat4 proj;
 };
-/*
-const std::vector<Vertex> vertices = {
-	{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-	{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-	{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-	{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
 
-	{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-	{{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-	{{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-	{{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
+struct LightBufferObject {
+	glm::vec3 pos;
+	glm::vec3 playerPos;
 };
-
-
-const std::vector<uint16_t> indices = {
-	0, 1, 2, 2, 3, 0,
-	4, 5, 6, 6, 7, 4
-};
-*/
-

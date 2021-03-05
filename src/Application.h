@@ -190,6 +190,8 @@ private:
 	VkImageView mDepthImageView;
 	std::vector<VkBuffer> mUniformBuffers;
 	std::vector<VkDeviceMemory> mUniformBuffersMemory;
+	VkBuffer mLightBuffer;
+	VkDeviceMemory mLightBufferMemory;
 	VkDescriptorPool mDescriptorPool;
 	std::vector<VkDescriptorSet> mDescriptorSets;
 	std::vector<VkCommandBuffer> mCommandBuffers;

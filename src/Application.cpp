@@ -10,7 +10,6 @@
 #include <cstdlib>
 #include <cstring>
 
-
 #include "Application.h"
 
 const uint32_t WIDTH = 800;
@@ -40,6 +39,7 @@ Application::Application()
 
 Application::~Application()
 {
+
 }
 
 void Application::run()
@@ -378,7 +378,6 @@ if (vkCreateDevice(mPhysicalDevice, &createInfo, nullptr, &mDevice) != VK_SUCCES
 	throw std::runtime_error("Failed to create logical device!");
 }
 
-
 // Create the Queues
 vkGetDeviceQueue(mDevice, indices.GraphicsFamily, 0, &mGraphicsQueue);
 vkGetDeviceQueue(mDevice, indices.PresentFamily, 0, &mPresentQueue);
@@ -535,7 +534,13 @@ void Application::createDescriptorSetLayout()
 	imageSamplerLayoutBinding.descriptorCount = 1;
 	imageSamplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-	std::array<VkDescriptorSetLayoutBinding, 2> bindings{ uboLayoutBinding, imageSamplerLayoutBinding };
+	VkDescriptorSetLayoutBinding lightLayoutBinding{};
+	lightLayoutBinding.binding = 2;
+	lightLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	lightLayoutBinding.descriptorCount = 1;
+	lightLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+	std::array<VkDescriptorSetLayoutBinding, 3> bindings{ uboLayoutBinding, imageSamplerLayoutBinding, lightLayoutBinding };
 
 	VkDescriptorSetLayoutCreateInfo layoutInfo{};
 
@@ -618,7 +623,6 @@ void Application::createGraphicsPipeline()
 	viewportState.scissorCount = 1;
 	viewportState.viewportCount = 1;
 
-
 	// Create Rasterizer Info
 	VkPipelineRasterizationStateCreateInfo rasterizer{};
 	rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
@@ -670,7 +674,6 @@ void Application::createGraphicsPipeline()
 		throw std::runtime_error("Failed to create pipeline layout!");
 	}
 
-	
 	// Create Graphics Pipeline
 	VkGraphicsPipelineCreateInfo pipelineInfo{};
 	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -814,7 +817,6 @@ void Application::createTextureSampler()
 	{
 		throw std::runtime_error("Failed to create Sampler!");
 	}
-	
 }
 
 void Application::loadModel()
@@ -842,7 +844,12 @@ void Application::loadModel()
 				attrib.vertices[3 * index.vertex_index + 2]
 			};
 
-			vertex.color = { 0.0f, 0.0f, 0.0f };
+			vertex.normal = 
+			{ 
+				attrib.normals[3 * index.normal_index + 0],
+				attrib.normals[3 * index.normal_index + 1],
+				attrib.normals[3 * index.normal_index + 2]
+			};
 
 			vertex.texCoord =
 			{
@@ -854,8 +861,6 @@ void Application::loadModel()
 			indices.push_back(indices.size());
 		}
 	}
-
-
 }
 
 void Application::createVertexBuffers()
@@ -913,16 +918,23 @@ void Application::createUniformBuffers()
 	{
 		createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, mUniformBuffers[i], mUniformBuffersMemory[i]);
 	}
+
+	VkDeviceSize LightBufferSize = sizeof(LightBufferObject);
+	
+	createBuffer(LightBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, mLightBuffer, mLightBufferMemory);
 }
 
 void Application::createDescriptorPool()
 {
-	std::array<VkDescriptorPoolSize, 2> poolSize;
+	std::array<VkDescriptorPoolSize, 3> poolSize;
 	poolSize[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	poolSize[0].descriptorCount = static_cast<uint32_t>(mSwapChainImages.size());
 
 	poolSize[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	poolSize[1].descriptorCount = static_cast<uint32_t>(mSwapChainImages.size());
+	
+	poolSize[2].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	poolSize[2].descriptorCount = static_cast<uint32_t>(mSwapChainImages.size());
 
 	VkDescriptorPoolCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -964,7 +976,12 @@ void Application::createDescriptorSets()
 		imageInfo.imageView = mTextureImageView;
 		imageInfo.sampler = mTextureSampler;
 
-		std::array<VkWriteDescriptorSet, 2> writeDescriptor{};
+		VkDescriptorBufferInfo lightInfo{};
+		lightInfo.buffer = mLightBuffer;
+		lightInfo.offset = 0;
+		lightInfo.range = sizeof(LightBufferObject);
+
+		std::array<VkWriteDescriptorSet, 3> writeDescriptor{};
 		writeDescriptor[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		writeDescriptor[0].dstBinding = 0;
 		writeDescriptor[0].dstArrayElement = 0;
@@ -980,7 +997,15 @@ void Application::createDescriptorSets()
 		writeDescriptor[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		writeDescriptor[1].descriptorCount = 1;
 		writeDescriptor[1].pImageInfo = &imageInfo;
-	
+
+		writeDescriptor[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		writeDescriptor[2].dstBinding = 2;
+		writeDescriptor[2].dstArrayElement = 0;
+		writeDescriptor[2].dstSet = mDescriptorSets[i];
+		writeDescriptor[2].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		writeDescriptor[2].descriptorCount = 1;
+		writeDescriptor[2].pBufferInfo = &lightInfo;
+
 		vkUpdateDescriptorSets(mDevice, static_cast<uint32_t>(writeDescriptor.size()), writeDescriptor.data(), 0, nullptr);
 	}
 }
@@ -997,7 +1022,7 @@ void Application::createCommandBuffers()
 	
 	if (vkAllocateCommandBuffers(mDevice, &allocInfo, mCommandBuffers.data()) != VK_SUCCESS)
 	{
-		throw std::runtime_error("Failed to allocate frame buffers!");
+		throw std::runtime_error("Failed to allocate command buffers!");
 	}
 
 	for (uint32_t i = 0; i < mCommandBuffers.size(); i++)
@@ -1181,7 +1206,7 @@ void Application::updateUniformBuffer(uint32_t currentImage)
 
 	UniformBufferObject ubo;
 	ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	ubo.view = glm::lookAt(glm::vec3(4.0f), glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 	ubo.proj = glm::perspective(glm::radians(45.0f), mSwapChainImageExtent.width / (float)mSwapChainImageExtent.height, 0.1f, 10.0f);
 	ubo.proj[1][1] *= -1;
 
@@ -1189,6 +1214,14 @@ void Application::updateUniformBuffer(uint32_t currentImage)
 	vkMapMemory(mDevice, mUniformBuffersMemory[currentImage], 0, sizeof(ubo), 0, &data);
 	memcpy(data, &ubo, sizeof(ubo));
 	vkUnmapMemory(mDevice, mUniformBuffersMemory[currentImage]);
+
+	LightBufferObject lbo;
+	lbo.pos = glm::vec3(0.5f);
+	lbo.playerPos = glm::vec3(2.0f);
+
+	vkMapMemory(mDevice, mLightBufferMemory, 0, sizeof(LightBufferObject), 0, &data);
+	memcpy(data, &lbo, sizeof(LightBufferObject));
+	vkUnmapMemory(mDevice, mLightBufferMemory);
 }
 
 void Application::createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage & image, VkDeviceMemory & imageMemory)
@@ -1376,7 +1409,6 @@ void Application::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtil
 {
 	auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
 	if (func != nullptr) func(instance, debugMessenger, pAllocator);
-
 }
 
 #pragma endregion
